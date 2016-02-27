@@ -248,6 +248,9 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
         //     or a string explaining why this function can't be used.
         private string CheckThreatLevelTest(ThreatLevel level, string function)
         {
+            if (GetDynaPerms(m_item.CreatorID, m_item.OwnerID, m_item.GroupID, function))
+                return string.Empty;
+
             if (!m_FunctionPerms.ContainsKey(function))
             {
                 FunctionPerms perms = new FunctionPerms();
@@ -326,6 +329,13 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
             if (m_FunctionPerms[function].AllowedOwners == null)
             {
                 // Allow / disallow by threat level
+                if (level == ThreatLevel.Impossible)
+                {
+                    return
+                        String.Format(
+                            "{0} permission denied.  Function can only be enabled explicitly via Allow_{0} or Creator_{0}.",
+                            function);
+                }
                 if (level > m_MaxThreatLevel)
                     return
                         String.Format(
@@ -402,6 +412,17 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
             return String.Empty;
         }
 
+        private bool GetDynaPerms(UUID owner, UUID creator, UUID group, string function)
+        {
+            if (World.GetOsslPerms(owner, function))
+                return true;
+            if (World.GetOsslPerms(creator, function))
+                return true;
+
+            return false;
+
+        }
+
         internal void OSSLDeprecated(string function, string replacement)
         {
             OSSLShoutError(string.Format("Use of function {0} is deprecated. Use {1} instead.", function, replacement));
@@ -413,6 +434,34 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
             if (delay == 0)
                 return;
             System.Threading.Thread.Sleep(delay);
+        }
+
+        public void osGrantScriptPermissions(LSL_Key avatar, LSL_List osfunctions)
+        {
+            CheckThreatLevel(ThreatLevel.Impossible, "osGrantScriptPermissions");
+            m_host.AddScriptLPS(1);
+            UUID key;
+            UUID.TryParse(avatar.m_string, out key);
+
+            for (int item = 0; item <= osfunctions.Length - 1; item++)
+            {
+                string function = osfunctions.GetLSLStringItem(item);
+                World.AddOsslPerm(key, function);
+            }
+        }
+
+        public void osRevokeScriptPermissions(LSL_Key avatar, LSL_List osfunctions)
+        {
+            CheckThreatLevel(ThreatLevel.Impossible, "osRevokeScriptPermissions");
+            m_host.AddScriptLPS(1);
+            UUID key;
+            UUID.TryParse(avatar.m_string, out key);
+
+            for (int item = 0; item <= osfunctions.Length - 1; item++)
+            {
+                string function = osfunctions.GetLSLStringItem(item);
+                World.RemoveOsslPerm(key, function);
+            }
         }
 
         public LSL_Integer osSetTerrainHeight(int x, int y, double val)
@@ -694,6 +743,8 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
 
         public bool osConsoleCommand(string command)
         {
+            CheckThreatLevel(ThreatLevel.Severe, "osConsoleCommand");
+
             m_host.AddScriptLPS(1);
 
             if (World.Permissions.CanRunConsoleCommand(m_host.OwnerID))
@@ -1088,21 +1139,6 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
             }
             return vec;
         }
-
-        /*
-        public void osSetStateEvents(int events)
-        {
-            // This function is a hack. There is no reason for it's existence
-            // anymore, since state events now work properly.
-            // It was probably added as a crutch or debugging aid, and
-            // should be removed
-            //
-            CheckThreatLevel(ThreatLevel.High, "osSetStateEvents");
-            m_host.AddScriptLPS(1);
-
-            m_host.SetScriptEvents(m_item.ItemID, events);
-        }
-        */
 
         public void osSetRegionWaterHeight(double height)
         {
@@ -2518,7 +2554,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                 ScenePresence sp = World.GetScenePresence(npcId);
 
                 if (sp != null)
-                    return new LSL_Rotation(sp.GetWorldRotation());
+                    return new LSL_Rotation(sp.WorldRotation);
             }
 
             return Quaternion.Identity;
@@ -2936,7 +2972,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
             m_host.AddScriptLPS(1);
 
             UUID avatarId = new UUID(avatar);
-            Vector3 pos = m_host.GetWorldPosition();
+            Vector3 pos = m_host.WorldPosition;
 
             ScenePresence presence = World.GetScenePresence(avatarId); 
             if (presence != null)
@@ -2966,7 +3002,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
             UUID avatarId = new UUID(avatar);
             ScenePresence presence = World.GetScenePresence(avatarId);
 
-            if (presence != null && World.ScriptDanger(m_host.LocalId, m_host.GetWorldPosition()))
+            if (presence != null && World.ScriptDanger(m_host.LocalId, m_host.WorldPosition))
             {
                 float health = presence.Health;
                 health += (float)healing;
@@ -3001,8 +3037,6 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
         /// </summary>
         public void osSetProjectionParams(bool projection, LSL_Key texture, double fov, double focus, double amb)
         {
-            CheckThreatLevel(ThreatLevel.High, "osSetProjectionParams");
-
             osSetProjectionParams(UUID.Zero.ToString(), projection, texture, fov, focus, amb);
         }
 
@@ -3011,9 +3045,6 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
         /// </summary>
         public void osSetProjectionParams(LSL_Key prim, bool projection, LSL_Key texture, double fov, double focus, double amb)
         {
-            CheckThreatLevel(ThreatLevel.High, "osSetProjectionParams");
-            m_host.AddScriptLPS(1);
-
             SceneObjectPart obj = null;
             if (prim == UUID.Zero.ToString())
             {
@@ -3021,10 +3052,13 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
             }
             else
             {
+                /* make only accessing other prims addressed by threat level */
+                CheckThreatLevel(ThreatLevel.High, "osSetProjectionParams");
                 obj = World.GetSceneObjectPart(new UUID(prim));
                 if (obj == null)
                     return;
             }
+            m_host.AddScriptLPS(1);
 
             obj.Shape.ProjectionEntry = projection;
             obj.Shape.ProjectionTextureUUID = new UUID(texture);

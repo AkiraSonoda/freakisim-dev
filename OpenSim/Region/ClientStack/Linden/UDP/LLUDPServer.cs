@@ -448,15 +448,11 @@ namespace OpenSim.Region.ClientStack.LindenUDP
 
             base.StartInbound(m_recvBufferSize, m_asyncPacketHandling);
 
-            // This thread will process the packets received that are placed on the packetInbox
-            Watchdog.StartThread(
-                IncomingPacketHandler,
-                string.Format("Incoming Packets ({0})", m_scene.RegionInfo.RegionName),
-                ThreadPriority.Normal,
-                false,
-                true,
-                GetWatchdogIncomingAlarmData,
-                Watchdog.DEFAULT_WATCHDOG_TIMEOUT_MS);
+            Thread thread = new Thread(IncomingPacketHandler);
+            thread.Name = string.Format("Incoming Packets ({0})", m_scene.RegionInfo.RegionName);
+            thread.Priority = ThreadPriority.Normal;
+            thread.IsBackground = false;
+            thread.Start();
         }
 
         private new void StartOutbound()
@@ -465,14 +461,11 @@ namespace OpenSim.Region.ClientStack.LindenUDP
 
             base.StartOutbound();
 
-            Watchdog.StartThread(
-                OutgoingPacketHandler,
-                string.Format("Outgoing Packets ({0})", m_scene.RegionInfo.RegionName),
-                ThreadPriority.Normal,
-                false,
-                true,
-                GetWatchdogOutgoingAlarmData,
-                Watchdog.DEFAULT_WATCHDOG_TIMEOUT_MS);
+            Thread thread = new Thread(OutgoingPacketHandler);
+            thread.Name = string.Format("Outgoing Packets ({0})", m_scene.RegionInfo.RegionName);
+            thread.Priority = ThreadPriority.Normal;
+            thread.IsBackground = false;
+            thread.Start();
         }
 
         public void Stop()
@@ -1028,8 +1021,6 @@ namespace OpenSim.Region.ClientStack.LindenUDP
                     // The packet grew larger than the bufferSize while zerocoding.
                     // Remove the MSG_ZEROCODED flag and send the unencoded data
                     // instead
-                    m_log.Debug("[LLUDPSERVER]: Packet exceeded buffer size during zerocoding for " + type + ". DataLength=" + dataLength +
-                        " and BufferLength=" + buffer.Data.Length + ". Removing MSG_ZEROCODED flag");
                     data[0] = (byte)(data[0] & ~Helpers.MSG_ZEROCODED);
                 }
             }
@@ -1057,8 +1048,10 @@ namespace OpenSim.Region.ClientStack.LindenUDP
             #region Queue or Send
 
             OutgoingPacket outgoingPacket = new OutgoingPacket(udpClient, buffer, category, null);
+
             // If we were not provided a method for handling unacked, use the UDPServer default method
-            outgoingPacket.UnackedMethod = ((method == null) ? delegate(OutgoingPacket oPacket) { ResendUnacked(oPacket); } : method);
+            if ((outgoingPacket.Buffer.Data[0] & Helpers.MSG_RELIABLE) != 0)
+                outgoingPacket.UnackedMethod = ((method == null) ? delegate(OutgoingPacket oPacket) { ResendUnacked(oPacket); } : method);
 
             // If a Linden Lab 1.23.5 client receives an update packet after a kill packet for an object, it will 
             // continue to display the deleted object until relog.  Therefore, we need to always queue a kill object
@@ -1997,14 +1990,11 @@ namespace OpenSim.Region.ClientStack.LindenUDP
                     m_log.Error("[LLUDPSERVER]: Error in the incoming packet handler loop: " + ex.Message, ex);
                 }
 
-                Watchdog.UpdateThread();
             }
 
             if (packetInbox.Count > 0)
                 m_log.Warn("[LLUDPSERVER]: IncomingPacketHandler is shutting down, dropping " + packetInbox.Count + " packets");
             packetInbox.Clear();
-
-            Watchdog.RemoveThread();
         }
 
         private void OutgoingPacketHandler()
@@ -2085,15 +2075,12 @@ namespace OpenSim.Region.ClientStack.LindenUDP
                     if (!m_packetSent)
                         m_dataPresentEvent.WaitOne(100);
 
-                    Watchdog.UpdateThread();
                 }
                 catch (Exception ex)
                 {
                     m_log.Error("[LLUDPSERVER]: OutgoingPacketHandler loop threw an exception: " + ex.Message, ex);
                 }
             }
-
-            Watchdog.RemoveThread();
         }
 
         protected void ClientOutgoingPacketHandler(IClientAPI client)

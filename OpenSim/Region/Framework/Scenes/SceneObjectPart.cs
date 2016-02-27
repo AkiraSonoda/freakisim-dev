@@ -261,7 +261,7 @@ namespace OpenSim.Region.Framework.Scenes
 
         public Quaternion SpinOldOrientation = Quaternion.Identity;
 
-        protected int m_APIDIterations = 0;
+        protected bool m_APIDActive = false;
         protected Quaternion m_APIDTarget = Quaternion.Identity;
         protected float m_APIDDamp = 0;
         protected float m_APIDStrength = 0;
@@ -637,6 +637,12 @@ namespace OpenSim.Region.Framework.Scenes
             }
         }
 
+        protected bool APIDActive
+        {
+            get { return m_APIDActive; }
+            set { m_APIDActive = value; }
+        }
+
         protected Quaternion APIDTarget
         {
             get { return m_APIDTarget; }
@@ -771,8 +777,8 @@ namespace OpenSim.Region.Framework.Scenes
                         else
                         {
                             // The physics engine always sees all objects (root or linked) in world coordinates.
-                            actor.Position = GetWorldPosition();
-                            actor.Orientation = GetWorldRotation();
+                            actor.Position = WorldPosition;
+                            actor.Orientation = WorldRotation;
                         }
 
                         // Tell the physics engines that this prim changed.
@@ -800,8 +806,8 @@ namespace OpenSim.Region.Framework.Scenes
                     PhysicsActor actor = PhysActor;
                     if (ParentID != 0 && actor != null)
                     {
-                        actor.Position = GetWorldPosition();
-                        actor.Orientation = GetWorldRotation();
+                        actor.Position = WorldPosition;
+                        actor.Orientation = WorldRotation;
 
                         // Tell the physics engines that this prim changed.
                         if (ParentGroup.Scene != null)
@@ -875,7 +881,7 @@ namespace OpenSim.Region.Framework.Scenes
                         else
                         {
                             // Child prim we have to calculate it's world rotationwel
-                            Quaternion resultingrotation = GetWorldRotation();
+                            Quaternion resultingrotation = WorldRotation;
                             actor.Orientation = resultingrotation;
                             //m_log.Info("[PART]: RO2:" + actor.Orientation.ToString());
                         }
@@ -918,14 +924,17 @@ namespace OpenSim.Region.Framework.Scenes
 
             set
             {
-                m_velocity = value;
+                if (Util.IsNanOrInfinity(value))
+                    m_velocity = Vector3.Zero;
+                else
+                    m_velocity = value;
 
                 PhysicsActor actor = PhysActor;
                 if (actor != null)
                 {
                     if (actor.IsPhysical)
                     {
-                        actor.Velocity = value;
+                        actor.Velocity = m_velocity;
                         ParentGroup.Scene.PhysicsScene.AddPhysicsActorTaint(actor);
                     }
                 }
@@ -946,20 +955,36 @@ namespace OpenSim.Region.Framework.Scenes
             get
             {
                 PhysicsActor actor = PhysActor;
-                if ((actor != null) && actor.IsPhysical)
+                if ((actor != null) && actor.IsPhysical && m_linkNum < 2)
                 {
                     m_angularVelocity = actor.RotationalVelocity;
                 }
                 return m_angularVelocity;
             }
-            set { m_angularVelocity = value; }
+            set
+            {
+                if (Util.IsNanOrInfinity(value))
+                    m_angularVelocity = Vector3.Zero;
+                else
+                    m_angularVelocity = value;
+
+                PhysicsActor actor = PhysActor;
+                if ((actor != null) && actor.IsPhysical)
+                    actor.RotationalVelocity = m_angularVelocity;
+            }
         }
 
         /// <summary></summary>
         public Vector3 Acceleration
         {
             get { return m_acceleration; }
-            set { m_acceleration = value; }
+            set
+            {
+                if (Util.IsNanOrInfinity(value))
+                    m_acceleration = Vector3.Zero;
+                else
+                    m_acceleration = value;
+            }
         }
 
         public string Description { get; set; }
@@ -1585,19 +1610,27 @@ namespace OpenSim.Region.Framework.Scenes
         public void AddTextureAnimation(Primitive.TextureAnimation pTexAnim)
         {
             byte[] data = new byte[16];
-            int pos = 0;
 
-            // The flags don't like conversion from uint to byte, so we have to do
-            // it the crappy way.  See the above function :(
+            if (pTexAnim.Flags == Primitive.TextureAnimMode.ANIM_OFF)
+            {
+                data = Utils.EmptyBytes;
+            }
+            else
+            {
+                int pos = 0;
+                data = new byte[16];
+                // The flags don't like conversion from uint to byte, so we have to do
+                // it the crappy way.  See the above function :(
 
-            data[pos] = ConvertScriptUintToByte((uint)pTexAnim.Flags); pos++;
-            data[pos] = (byte)pTexAnim.Face; pos++;
-            data[pos] = (byte)pTexAnim.SizeX; pos++;
-            data[pos] = (byte)pTexAnim.SizeY; pos++;
+                data[pos] = ConvertScriptUintToByte((uint)pTexAnim.Flags); pos++;
+                data[pos] = (byte)pTexAnim.Face; pos++;
+                data[pos] = (byte)pTexAnim.SizeX; pos++;
+                data[pos] = (byte)pTexAnim.SizeY; pos++;
 
-            Utils.FloatToBytes(pTexAnim.Start).CopyTo(data, pos);
-            Utils.FloatToBytes(pTexAnim.Length).CopyTo(data, pos + 4);
-            Utils.FloatToBytes(pTexAnim.Rate).CopyTo(data, pos + 8);
+                Utils.FloatToBytes(pTexAnim.Start).CopyTo(data, pos);
+                Utils.FloatToBytes(pTexAnim.Length).CopyTo(data, pos + 4);
+                Utils.FloatToBytes(pTexAnim.Rate).CopyTo(data, pos + 8);
+            }
 
             m_TextureAnimation = data;
         }
@@ -1628,7 +1661,7 @@ namespace OpenSim.Region.Framework.Scenes
 
             if (localGlobalTF)
             {
-                Quaternion grot = GetWorldRotation();
+                Quaternion grot = WorldRotation;
                 Quaternion AXgrot = grot;
                 Vector3 AXimpulsei = impulsei;
                 Vector3 newimpulse = AXimpulsei * AXgrot;
@@ -1654,7 +1687,7 @@ namespace OpenSim.Region.Framework.Scenes
 
             if (localGlobalTF)
             {
-                Quaternion grot = GetWorldRotation();
+                Quaternion grot = WorldRotation;
                 Quaternion AXgrot = grot;
                 Vector3 AXimpulsei = impulsei;
                 Vector3 newimpulse = AXimpulsei * AXgrot;
@@ -1677,7 +1710,7 @@ namespace OpenSim.Region.Framework.Scenes
 
             if (localGlobalTF)
             {
-                Quaternion grot = GetWorldRotation();
+                Quaternion grot = WorldRotation;
                 Quaternion AXgrot = grot;
                 Vector3 AXimpulsei = impulsei;
                 Vector3 newimpulse = AXimpulsei * AXgrot;
@@ -2039,7 +2072,7 @@ namespace OpenSim.Region.Framework.Scenes
         /// </summary>
         /// <param name="xmlReader"></param>
         /// <returns></returns>
-        public static SceneObjectPart FromXml(XmlTextReader xmlReader)
+        public static SceneObjectPart FromXml(XmlReader xmlReader)
         {
             SceneObjectPart part = SceneObjectSerializer.Xml2ToSOP(xmlReader);
 
@@ -2072,22 +2105,6 @@ namespace OpenSim.Region.Framework.Scenes
                 return;
 
             ParentGroup.RootPart.RETURN_AT_EDGE = p;
-        }
-
-        public bool GetBlockGrab()
-        {
-            if (ParentGroup.IsDeleted)
-                return false;
-
-            return ParentGroup.RootPart.BlockGrab;
-        }
-
-        public void SetBlockGrab(bool p)
-        {
-            if (ParentGroup.IsDeleted)
-                return;
-
-            ParentGroup.RootPart.BlockGrab = p;
         }
 
         public void SetStatusSandbox(bool p)
@@ -2185,53 +2202,59 @@ namespace OpenSim.Region.Framework.Scenes
         /// Remember, the Group Position simply gives the position of the group itself
         /// </remarks>
         /// <returns>A Linked Child Prim objects position in world</returns>
-        public Vector3 GetWorldPosition()
+        public Vector3 WorldPosition
         {
-            Vector3 ret;
-            if (_parentID == 0)
-                // if a root SOP, my position is what it is
-                ret = GroupPosition;
-            else
+            get
             {
-                // If a child SOP, my position is relative to the root SOP so take
-                //    my info and add the root's position and rotation to
-                //    get my world position.
-                Quaternion parentRot = ParentGroup.RootPart.RotationOffset;
-                Vector3 translationOffsetPosition = OffsetPosition * parentRot;
-                ret = ParentGroup.AbsolutePosition + translationOffsetPosition;
+                Vector3 ret;
+                if (_parentID == 0)
+                    // if a root SOP, my position is what it is
+                    ret = GroupPosition;
+                else
+                {
+                    // If a child SOP, my position is relative to the root SOP so take
+                    //    my info and add the root's position and rotation to
+                    //    get my world position.
+                    Quaternion parentRot = ParentGroup.RootPart.RotationOffset;
+                    Vector3 translationOffsetPosition = OffsetPosition * parentRot;
+                    ret = ParentGroup.AbsolutePosition + translationOffsetPosition;
+                }
+                return ret;
             }
-            return ret;
         }
 
         /// <summary>
         /// Gets the rotation of this prim offset by the group rotation
         /// </summary>
         /// <returns></returns>
-        public Quaternion GetWorldRotation()
+        public Quaternion WorldRotation
         {
-            Quaternion newRot;
-
-            if (this.LinkNum == 0 || this.LinkNum == 1)
+            get
             {
-                newRot = RotationOffset;
-            }
-            else
-            {
-                // A child SOP's rotation is relative to the root SOP's rotation.
-                // Combine them to get my absolute rotation.
-                Quaternion parentRot = ParentGroup.RootPart.RotationOffset;
-                Quaternion oldRot = RotationOffset;
-                newRot = parentRot * oldRot;
-            }
+                Quaternion newRot;
 
-            return newRot;
+                if (this.LinkNum == 0 || this.LinkNum == 1)
+                {
+                    newRot = RotationOffset;
+                }
+                else
+                {
+                    // A child SOP's rotation is relative to the root SOP's rotation.
+                    // Combine them to get my absolute rotation.
+                    Quaternion parentRot = ParentGroup.RootPart.RotationOffset;
+                    Quaternion oldRot = RotationOffset;
+                    newRot = parentRot * oldRot;
+                }
+
+                return newRot;
+            }
         }
 
         public void MoveToTarget(Vector3 target, float tau)
         {
             if (tau > 0)
             {
-                ParentGroup.moveToTarget(target, tau);
+                ParentGroup.MoveToTarget(target, tau);
             }
             else
             {
@@ -2286,7 +2309,7 @@ namespace OpenSim.Region.Framework.Scenes
             detobj.nameStr = obj.Name;
             detobj.ownerUUID = obj.OwnerID;
             detobj.posVector = obj.AbsolutePosition;
-            detobj.rotQuat = obj.GetWorldRotation();
+            detobj.rotQuat = obj.WorldRotation;
             detobj.velVector = obj.Velocity;
             detobj.colliderType = 0;
             detobj.groupUUID = obj.GroupID;
@@ -2605,8 +2628,8 @@ namespace OpenSim.Region.Framework.Scenes
                     m_log.WarnFormat("[SceneObjectPart] Invalid rotation strength {0}",APIDStrength);
                     return;
                 }
-                
-                m_APIDIterations = 1 + (int)(Math.PI * APIDStrength);
+
+                APIDActive = true;
             }
 
             // Necessary to get the lookat deltas applied
@@ -2620,7 +2643,7 @@ namespace OpenSim.Region.Framework.Scenes
 
         public void StopLookAt()
         {
-            APIDTarget = Quaternion.Identity;
+            APIDActive = false;
         }
 
 
@@ -3262,10 +3285,7 @@ namespace OpenSim.Region.Framework.Scenes
 
         public void StopMoveToTarget()
         {
-            ParentGroup.stopMoveToTarget();
-
-            ParentGroup.ScheduleGroupForTerseUpdate();
-            //ParentGroup.ScheduleGroupForFullUpdate();
+            ParentGroup.StopMoveToTarget();
         }
 
         public void StoreUndoState()
@@ -3549,8 +3569,8 @@ namespace OpenSim.Region.Framework.Scenes
             Vector3 AmBb = new Vector3(0, 0, 0); // Vertex B - Vertex C
             Vector3 cross = new Vector3();
 
-            Vector3 pos = GetWorldPosition();
-            Quaternion rot = GetWorldRotation();
+            Vector3 pos = WorldPosition;
+            Quaternion rot = WorldRotation;
 
             // Variables prefixed with AX are Axiom.Math copies of the LL variety.
 
@@ -4203,8 +4223,8 @@ namespace OpenSim.Region.Framework.Scenes
                     if (pa != null)
                     {
                         pa.SetMaterial(Material);
-                        pa.Position = GetWorldPosition();
-                        pa.Orientation = GetWorldRotation();
+                        pa.Position = WorldPosition;
+                        pa.Orientation = WorldRotation;
                         DoPhysicsPropertyUpdate(UsePhysics, true);
 
                         SubscribeForCollisionEvents();
@@ -4327,7 +4347,7 @@ namespace OpenSim.Region.Framework.Scenes
                         Shape,
                         AbsolutePosition,
                         Scale,
-                        GetWorldRotation(),
+                        WorldRotation,
                         isPhysical,
                         isPhantom,
                         PhysicsShapeType,
@@ -4819,7 +4839,10 @@ namespace OpenSim.Region.Framework.Scenes
             if (OwnerID != item.Owner)
             {
                 //LogPermissions("Before ApplyNextOwnerPermissions");
-                ApplyNextOwnerPermissions();
+
+                if (scene.Permissions.PropagatePermissions())
+                    ApplyNextOwnerPermissions();
+
                 //LogPermissions("After ApplyNextOwnerPermissions");
 
                 LastOwnerID = OwnerID;
@@ -4853,20 +4876,44 @@ namespace OpenSim.Region.Framework.Scenes
         {
             try
             {
-                if (APIDTarget != Quaternion.Identity)
+                if (APIDActive)
                 {
-                    if (m_APIDIterations <= 1)
+                    PhysicsActor pa = ParentGroup.RootPart.PhysActor;
+                    if (pa == null || !pa.IsPhysical || APIDStrength < 0.04)
                     {
-                        UpdateRotation(APIDTarget);
-                        APIDTarget = Quaternion.Identity;
+                        StopLookAt();
                         return;
                     }
 
-                    Quaternion rot = Quaternion.Slerp(RotationOffset,APIDTarget,1.0f/(float)m_APIDIterations);
-                    rot.Normalize();
-                    UpdateRotation(rot);
+                    Quaternion currRot = WorldRotation;
+                    currRot.Normalize();
 
-                    m_APIDIterations--;
+                    // difference between current orientation and desired orientation
+                    Quaternion dR = new Quaternion(currRot.X, currRot.Y, currRot.Z, -currRot.W) * APIDTarget;
+
+                    // find axis of rotation to rotate to desired orientation
+                    Vector3 axis = Vector3.UnitX;
+                    float s = (float)Math.Sqrt(1.0f - dR.W * dR.W);
+                    if (s >= 0.001)
+                    {
+                        float invS = 1.0f / s;
+                        if (dR.W < 0) invS = -invS;
+                        axis = new Vector3(dR.X * invS, dR.Y * invS, dR.Z * invS) * currRot;
+                        axis.Normalize();
+                    }
+
+                    // angle between current and desired orientation
+                    float angle = 2.0f * (float)Math.Acos(dR.W);
+                    if (angle > Math.PI)
+                        angle = 2.0f * (float)Math.PI - angle;
+
+                    // clamp strength to avoid overshoot
+                    float strength = 1.0f / APIDStrength;
+                    if (strength > 1.0) strength = 1.0f;
+
+                    // set angular velocity to rotate to desired orientation
+                    // with velocity proportional to strength and angle
+                    AngularVelocity = axis * angle * strength * (float)Math.PI;
 
                     // This ensures that we'll check this object on the next iteration
                     ParentGroup.QueueForUpdateCheck();

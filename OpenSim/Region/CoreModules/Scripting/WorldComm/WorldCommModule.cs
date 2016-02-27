@@ -283,6 +283,8 @@ namespace OpenSim.Region.CoreModules.Scripting.WorldComm
             DeliverMessage(type, channel, name, id, msg, position);
         }
 
+        public const int DEBUG_CHANNEL = 0x7FFFFFFF;
+
         /// <summary>
         /// This method scans over the objects which registered an interest in listen callbacks.
         /// For everyone it finds, it checks if it fits the given filter. If it does,  then
@@ -320,6 +322,10 @@ namespace OpenSim.Region.CoreModules.Scripting.WorldComm
 
                 double dis = Util.GetDistanceTo(sPart.AbsolutePosition,
                         position);
+                if (channel == DEBUG_CHANNEL)
+                {
+                    msg = "At region " + m_scene.Name + ":\n" + msg;
+                }
                 switch (type)
                 {
                     case ChatTypeEnum.Whisper:
@@ -378,12 +384,7 @@ namespace OpenSim.Region.CoreModules.Scripting.WorldComm
                 // Send message to the avatar.
                 // Channel zero only goes to the avatar
                 // non zero channel messages only go to the attachments
-                if (channel == 0)
-                {
-                    m_scene.SimChatToAgent(target, Utils.StringToBytes(msg),
-                            pos, name, id, false);
-                }
-                else
+                if (channel != 0)
                 {
                     List<SceneObjectGroup> attachments = sp.GetAttachments();
                     if (attachments.Count == 0)
@@ -411,6 +412,10 @@ namespace OpenSim.Region.CoreModules.Scripting.WorldComm
                             continue;
                         }
 
+                        if (channel == DEBUG_CHANNEL)
+                        {
+                            msg = "At region " + m_scene.Name + ":\n" + msg;
+                        }
                         if (targets.Contains(li.GetHostID()))
                             QueueMessage(new ListenerInfo(li, name, id, msg));
                     }

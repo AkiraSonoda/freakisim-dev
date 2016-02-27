@@ -193,6 +193,47 @@ namespace OpenSim.Framework.Console
             return true;
         }
 
+		/// <summary>
+		/// Convert a console input to a float, automatically complaining if a console is given.
+		/// </summary>
+		/// <param name='console'>Can be null if no console is available.</param>
+		/// <param name='rawConsoleInput'>/param>
+		/// <param name='i'></param>
+		/// <returns></returns>
+		public static bool TryParseConsoleFloat(ICommandConsole console, string rawConsoleInput, out float i)
+		{
+			if (!float.TryParse(rawConsoleInput, out i))
+			{
+				if (console != null)
+					console.OutputFormat("ERROR: {0} is not a valid float", rawConsoleInput);
+
+				return false;
+			}
+
+			return true;
+		}
+
+		/// <summary>
+		/// Convert a console input to a double, automatically complaining if a console is given.
+		/// </summary>
+		/// <param name='console'>Can be null if no console is available.</param>
+		/// <param name='rawConsoleInput'>/param>
+		/// <param name='i'></param>
+		/// <returns></returns>
+		public static bool TryParseConsoleDouble(ICommandConsole console, string rawConsoleInput, out double i)
+		{
+			if (!double.TryParse(rawConsoleInput, out i))
+			{
+				if (console != null)
+					console.OutputFormat("ERROR: {0} is not a valid double", rawConsoleInput);
+
+				return false;
+			}
+
+			return true;
+		}
+
+
         /// <summary>
         /// Convert a console integer to a natural int, automatically complaining if a console is given.
         /// </summary>

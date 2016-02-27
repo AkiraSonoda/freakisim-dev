@@ -138,6 +138,9 @@ namespace OpenSim.Region.Framework.Scenes
         }
         private bool m_scripts_enabled;
 
+        // Dynamic ossl function permissions
+        private ThreadedClasses.RwLockedDictionaryAutoAdd<string, ThreadedClasses.RwLockedDictionary<UUID, bool>> m_DynaPerms = new ThreadedClasses.RwLockedDictionaryAutoAdd<string, ThreadedClasses.RwLockedDictionary<UUID, bool>>(delegate() { return new ThreadedClasses.RwLockedDictionary<UUID, bool>(); });
+
         public SynchronizeSceneHandler SynchronizeScene;
 
         /// <summary>
@@ -200,7 +203,32 @@ namespace OpenSim.Region.Framework.Scenes
         /// </summary>
         public bool SendPeriodicAppearanceUpdates { get; set; }
 
-        protected float m_defaultDrawDistance = 255.0f;
+		/// <summary>
+		/// How much a root agent has to change position before updates are sent to viewers.
+		/// </summary>
+		public float RootPositionUpdateTolerance { get; set; }
+
+		/// <summary>
+		/// How much a root agent has to rotate before updates are sent to viewers.
+		/// </summary>
+		public float RootRotationUpdateTolerance { get; set; }
+
+		/// <summary>
+		/// How much a root agent has to change velocity before updates are sent to viewers.
+		/// </summary>
+		public float RootVelocityUpdateTolerance { get; set; }
+
+        /// <summary>
+        /// If greater than 1, we only send terse updates to other root agents on every n updates.
+        /// </summary>
+        public int RootTerseUpdatePeriod { get; set; }
+
+        /// <summary>
+        /// If greater than 1, we only send terse updates to child agents on every n updates.
+        /// </summary>
+        public int ChildTerseUpdatePeriod { get; set; }
+
+		protected float m_defaultDrawDistance = 255.0f;
         public float DefaultDrawDistance 
         {
             // get { return m_defaultDrawDistance; }
@@ -407,12 +435,6 @@ namespace OpenSim.Region.Framework.Scenes
 //        private int m_lastUpdate;
 //        private bool m_firstHeartbeat = true;
         
-        private UpdatePrioritizationSchemes m_priorityScheme = UpdatePrioritizationSchemes.Time;
-        private bool m_reprioritizationEnabled = true;
-        private double m_reprioritizationInterval = 5000.0;
-        private double m_rootReprioritizationDistance = 10.0;
-        private double m_childReprioritizationDistance = 20.0;
-
         private Timer m_mapGenerationTimer = new Timer();
         private bool m_generateMaptiles;
 
@@ -644,11 +666,11 @@ namespace OpenSim.Region.Framework.Scenes
         public int MonitorLandTime { get { return landMS; } }
         public int MonitorLastFrameTick { get { return m_lastFrameTick; } }
 
-        public UpdatePrioritizationSchemes UpdatePrioritizationScheme { get { return m_priorityScheme; } }
-        public bool IsReprioritizationEnabled { get { return m_reprioritizationEnabled; } }
-        public double ReprioritizationInterval { get { return m_reprioritizationInterval; } }
-        public double RootReprioritizationDistance { get { return m_rootReprioritizationDistance; } }
-        public double ChildReprioritizationDistance { get { return m_childReprioritizationDistance; } }
+		public UpdatePrioritizationSchemes UpdatePrioritizationScheme { get; set; }
+		public bool IsReprioritizationEnabled { get; set; }
+		public double ReprioritizationInterval { get; set; }
+		public double RootReprioritizationDistance { get; set; }
+		public double ChildReprioritizationDistance { get; set; }		
 
         public AgentCircuitManager AuthenticateHandler
         {
@@ -729,7 +751,6 @@ namespace OpenSim.Region.Framework.Scenes
             m_sceneGridService = sceneGridService;
             m_SimulationDataService = simDataService;
             m_EstateDataService = estateDataService;
-            m_regionHandle = RegionInfo.RegionHandle;
 
             m_asyncSceneObjectDeleter = new AsyncSceneObjectGroupDeleter(this);
             m_asyncSceneObjectDeleter.Enabled = true;
@@ -919,7 +940,7 @@ namespace OpenSim.Region.Framework.Scenes
 
                     UUID tileID;
 
-                    if (tile != UUID.Zero.ToString() && UUID.TryParse(tile, out tileID))
+                    if (tile != UUID.Zero.ToString() && UUID.TryParse(tile, out tileID) && RegionInfo.MaptileStaticUUID == UUID.Zero)
                     {
                         RegionInfo.RegionSettings.TerrainImageID = tileID;
                     }
@@ -992,21 +1013,36 @@ namespace OpenSim.Region.Framework.Scenes
 
                 try
                 {
-                    m_priorityScheme = (UpdatePrioritizationSchemes)Enum.Parse(typeof(UpdatePrioritizationSchemes), update_prioritization_scheme, true);
+					UpdatePrioritizationScheme = (UpdatePrioritizationSchemes)Enum.Parse(typeof(UpdatePrioritizationSchemes), update_prioritization_scheme, true);
                 }
                 catch (Exception)
                 {
                     m_log.Warn("[PRIORITIZER]: UpdatePrioritizationScheme was not recognized, setting to default prioritizer Time");
-                    m_priorityScheme = UpdatePrioritizationSchemes.Time;
-                }
+					UpdatePrioritizationScheme = UpdatePrioritizationSchemes.Time;
+				}
 
-                m_reprioritizationEnabled = interestConfig.GetBoolean("ReprioritizationEnabled", true);
-                m_reprioritizationInterval = interestConfig.GetDouble("ReprioritizationInterval", 5000.0);
-                m_rootReprioritizationDistance = interestConfig.GetDouble("RootReprioritizationDistance", 10.0);
-                m_childReprioritizationDistance = interestConfig.GetDouble("ChildReprioritizationDistance", 20.0);
+				IsReprioritizationEnabled
+					= interestConfig.GetBoolean("ReprioritizationEnabled", IsReprioritizationEnabled);
+				ReprioritizationInterval
+					= interestConfig.GetDouble("ReprioritizationInterval", ReprioritizationInterval);
+				RootReprioritizationDistance
+					= interestConfig.GetDouble("RootReprioritizationDistance", RootReprioritizationDistance);
+				ChildReprioritizationDistance 
+					= interestConfig.GetDouble("ChildReprioritizationDistance", ChildReprioritizationDistance);
+
+				RootTerseUpdatePeriod = interestConfig.GetInt("RootTerseUpdatePeriod", RootTerseUpdatePeriod);
+				ChildTerseUpdatePeriod = interestConfig.GetInt("ChildTerseUpdatePeriod", ChildTerseUpdatePeriod);
+
+                RootPositionUpdateTolerance 
+                    = interestConfig.GetFloat("RootPositionUpdateTolerance", RootPositionUpdateTolerance);
+                RootRotationUpdateTolerance
+                    = interestConfig.GetFloat("RootRotationUpdateTolerance", RootRotationUpdateTolerance);
+                RootVelocityUpdateTolerance
+                    = interestConfig.GetFloat("RootVelocityUpdateTolerance", RootVelocityUpdateTolerance);
+
             }
 
-            m_log.DebugFormat("[SCENE]: Using the {0} prioritization scheme", m_priorityScheme);
+			m_log.DebugFormat("[SCENE]: Using the {0} prioritization scheme", UpdatePrioritizationScheme);
 
             #endregion Interest Management
 
@@ -1023,6 +1059,16 @@ namespace OpenSim.Region.Framework.Scenes
 
             PeriodicBackup = true;
             UseBackup = true;
+
+			IsReprioritizationEnabled = true;
+			UpdatePrioritizationScheme = UpdatePrioritizationSchemes.Time;
+			ReprioritizationInterval = 5000;
+
+            RootRotationUpdateTolerance = 0.1f;
+            RootVelocityUpdateTolerance = 0.001f;
+            RootPositionUpdateTolerance = 0.05f;
+			RootReprioritizationDistance = 10.0;
+			ChildReprioritizationDistance = 20.0;
 
             m_eventManager = new EventManager();
 
@@ -1839,7 +1885,7 @@ namespace OpenSim.Region.Framework.Scenes
         {
             try
             {
-                TerrainData map = SimulationDataService.LoadTerrain(RegionInfo.RegionID, (int)RegionInfo.RegionSizeX, (int)RegionInfo.RegionSizeY, (int)RegionInfo.RegionSizeZ);
+                HeightMapTerrainData map = SimulationDataService.LoadTerrain(RegionInfo.RegionID, (int)RegionInfo.RegionSizeX, (int)RegionInfo.RegionSizeY, (int)RegionInfo.RegionSizeZ);
                 if (map == null)
                 {
                     // This should be in the Terrain module, but it isn't because
@@ -1899,7 +1945,7 @@ namespace OpenSim.Region.Framework.Scenes
             GridRegion region = new GridRegion(RegionInfo);
             string error = GridService.RegisterRegion(RegionInfo.ScopeID, region);
             m_log.DebugFormat("{0} RegisterRegionWithGrid. name={1},id={2},loc=<{3},{4}>,size=<{5},{6}>",
-                                LogHeader, m_regionName, 
+                                LogHeader, RegionInfo.RegionName, 
                                 RegionInfo.RegionID,
                                 RegionInfo.RegionLocX, RegionInfo.RegionLocY,
                                 RegionInfo.RegionSizeX, RegionInfo.RegionSizeY);
@@ -1917,7 +1963,7 @@ namespace OpenSim.Region.Framework.Scenes
                 GridRegion region = new GridRegion(RegionInfo);
                 string error = GridService.RegisterRegion(RegionInfo.ScopeID, region);
                 m_log.DebugFormat("{0} Re-do RegisterRegionWithGrid. name={1},id={2},loc=<{3},{4}>,size=<{5},{6}>",
-                                    LogHeader, m_regionName,
+                                    LogHeader, RegionInfo.RegionName,
                                     RegionInfo.RegionID,
                                     RegionInfo.RegionLocX, RegionInfo.RegionLocY,
                                     RegionInfo.RegionSizeX, RegionInfo.RegionSizeY);
@@ -2028,8 +2074,8 @@ namespace OpenSim.Region.Framework.Scenes
                 SceneObjectPart target = GetSceneObjectPart(RayTargetID);
 
                 Vector3 direction = Vector3.Normalize(RayEnd - RayStart);
-                Vector3 AXOrigin = new Vector3(RayStart.X, RayStart.Y, RayStart.Z);
-                Vector3 AXdirection = new Vector3(direction.X, direction.Y, direction.Z);
+                Vector3 AXOrigin = RayStart;
+                Vector3 AXdirection = direction;
 
                 if (target != null)
                 {
@@ -2051,13 +2097,13 @@ namespace OpenSim.Region.Framework.Scenes
                     // If we hit something
                     if (ei.HitTF)
                     {
-                        Vector3 scaleComponent = new Vector3(ei.AAfaceNormal.X, ei.AAfaceNormal.Y, ei.AAfaceNormal.Z);
+                        Vector3 scaleComponent = ei.AAfaceNormal;
                         if (scaleComponent.X != 0) ScaleOffset = scale.X;
                         if (scaleComponent.Y != 0) ScaleOffset = scale.Y;
                         if (scaleComponent.Z != 0) ScaleOffset = scale.Z;
                         ScaleOffset = Math.Abs(ScaleOffset);
-                        Vector3 intersectionpoint = new Vector3(ei.ipoint.X, ei.ipoint.Y, ei.ipoint.Z);
-                        Vector3 normal = new Vector3(ei.normal.X, ei.normal.Y, ei.normal.Z);
+                        Vector3 intersectionpoint = ei.ipoint;
+                        Vector3 normal = ei.normal;
                         // Set the position to the intersection point
                         Vector3 offset = (normal * (ScaleOffset / 2f));
                         pos = (intersectionpoint + offset);
@@ -2082,7 +2128,7 @@ namespace OpenSim.Region.Framework.Scenes
 
                     if (ei.HitTF)
                     {
-                        pos = new Vector3(ei.ipoint.X, ei.ipoint.Y, ei.ipoint.Z);
+                        pos = ei.ipoint;
                     } else
                     {
                         // fall back to our stupid functionality
@@ -3136,8 +3182,8 @@ namespace OpenSim.Region.Framework.Scenes
             if (target != null && target2 != null)
             {
                 Vector3 direction = Vector3.Normalize(RayEnd - RayStart);
-                Vector3 AXOrigin = new Vector3(RayStart.X, RayStart.Y, RayStart.Z);
-                Vector3 AXdirection = new Vector3(direction.X, direction.Y, direction.Z);
+                Vector3 AXOrigin = RayStart;
+                Vector3 AXdirection = direction;
 
                 pos = target2.AbsolutePosition;
                 //m_log.Info("[OBJECT_REZ]: TargetPos: " + pos.ToString() + ", RayStart: " + RayStart.ToString() + ", RayEnd: " + RayEnd.ToString() + ", Volume: " + Util.GetDistanceTo(RayStart,RayEnd).ToString() + ", mag1: " + Util.GetMagnitude(RayStart).ToString() + ", mag2: " + Util.GetMagnitude(RayEnd).ToString());
@@ -3158,13 +3204,13 @@ namespace OpenSim.Region.Framework.Scenes
                 if (ei.HitTF)
                 {
                     Vector3 scale = target.Scale;
-                    Vector3 scaleComponent = new Vector3(ei.AAfaceNormal.X, ei.AAfaceNormal.Y, ei.AAfaceNormal.Z);
+                    Vector3 scaleComponent = ei.AAfaceNormal;
                     if (scaleComponent.X != 0) ScaleOffset = scale.X;
                     if (scaleComponent.Y != 0) ScaleOffset = scale.Y;
                     if (scaleComponent.Z != 0) ScaleOffset = scale.Z;
                     ScaleOffset = Math.Abs(ScaleOffset);
-                    Vector3 intersectionpoint = new Vector3(ei.ipoint.X, ei.ipoint.Y, ei.ipoint.Z);
-                    Vector3 normal = new Vector3(ei.normal.X, ei.normal.Y, ei.normal.Z);
+                    Vector3 intersectionpoint = ei.ipoint;
+                    Vector3 normal = ei.normal;
                     Vector3 offset = normal * (ScaleOffset / 2f);
                     pos = intersectionpoint + offset;
 
@@ -3173,7 +3219,7 @@ namespace OpenSim.Region.Framework.Scenes
                     SceneObjectGroup copy;
                     if (CopyRotates)
                     {
-                        Quaternion worldRot = target2.GetWorldRotation();
+                        Quaternion worldRot = target2.WorldRotation;
 
                         // SceneObjectGroup obj = m_sceneGraph.DuplicateObject(localID, pos, target.GetEffectiveObjectFlags(), AgentID, GroupID, worldRot);
                         copy = m_sceneGraph.DuplicateObject(localID, pos, target.GetEffectiveObjectFlags(), AgentID, GroupID, worldRot);
@@ -3479,6 +3525,8 @@ namespace OpenSim.Region.Framework.Scenes
                 return false;
             }
 
+            m_log.Info("CHECKVIEWERALLOWED");
+
             //Check if the viewer is banned or in the viewer access list
             //We check if the substring is listed for higher flexebility
             bool ViewerDenied = true;
@@ -3532,6 +3580,8 @@ namespace OpenSim.Region.Framework.Scenes
 
             ILandObject land;
             ScenePresence sp;
+
+            m_log.Info("CHECKSCENEPRESENCE");
 
             lock (m_removeClientLock)
             {
@@ -3727,8 +3777,12 @@ namespace OpenSim.Region.Framework.Scenes
                 CacheUserName(null, acd);
             }
 
+            m_log.Info("CHECKVIALOGIN");
+
             if (vialogin)
             {
+                m_log.Info("ISVIALOGIN");
+
 //                CleanDroppedAttachments();
 
                 // Make sure avatar position is in the region (why it wouldn't be is a mystery but do sanity checking)
@@ -3964,7 +4018,7 @@ namespace OpenSim.Region.Framework.Scenes
 
                 if (m_groupsModule != null)
                 {
-                    GroupMembershipData[] GroupMembership = m_groupsModule.GetMembershipData(agent.AgentID);
+                    GroupMembershipData[] GroupMembership = m_groupsModule.GetMembershipData(agent.AgentID, true);
 
                     if (GroupMembership != null)
                     {
@@ -4638,7 +4692,7 @@ namespace OpenSim.Region.Framework.Scenes
             if (part != null)
             {
                 SceneObjectPart parent = part.ParentGroup.RootPart;
-                return ScriptDanger(parent, parent.GetWorldPosition());
+                return ScriptDanger(parent, parent.WorldPosition);
             }
             else
             {
@@ -5026,7 +5080,7 @@ namespace OpenSim.Region.Framework.Scenes
                 case PhysicsJointType.Ball:
                     {
                         Vector3 jointAnchor = PhysicsScene.GetJointAnchor(joint);
-                        Vector3 proxyPos = new Vector3(jointAnchor.X, jointAnchor.Y, jointAnchor.Z);
+                        Vector3 proxyPos = jointAnchor;
                         jointProxyObject.ParentGroup.UpdateGroupPosition(proxyPos); // schedules the entire group for a terse update
                     }
                     break;
@@ -5051,7 +5105,7 @@ namespace OpenSim.Region.Framework.Scenes
                             jointErrorMessage(joint, "joint.TrackedBodyName is null, joint " + joint.ObjectNameInScene);
                         }
 
-                        Vector3 proxyPos = new Vector3(jointAnchor.X, jointAnchor.Y, jointAnchor.Z);
+                        Vector3 proxyPos = jointAnchor;
                         Quaternion q = trackedBody.RotationOffset * joint.LocalRotation;
 
                         jointProxyObject.ParentGroup.UpdateGroupPosition(proxyPos); // schedules the entire group for a terse update
@@ -5152,8 +5206,8 @@ namespace OpenSim.Region.Framework.Scenes
                 y = Heightmap.Height - 1;
 
             Vector3 p0 = new Vector3(x, y, (float)Heightmap[(int)x, (int)y]);
-            Vector3 p1 = new Vector3(p0);
-            Vector3 p2 = new Vector3(p0);
+            Vector3 p1 = p0;
+            Vector3 p2 = p0;
 
             p1.X += 1.0f;
             if (p1.X < Heightmap.Width)
@@ -5584,7 +5638,7 @@ namespace OpenSim.Region.Framework.Scenes
             {
                 if (!AuthorizeUser(aCircuit, false, out reason))
                 {
-                    //m_log.DebugFormat("[SCENE]: Denying access for {0}", agentID);
+                    m_log.DebugFormat("[SCENE]: AuthorizeUser: Denying access for {0}", agentID);
                     return false;
                 }
             }
@@ -5633,7 +5687,7 @@ namespace OpenSim.Region.Framework.Scenes
 
                 if (!TestLandRestrictions(agentID, out reason, ref posX, ref posY))
                 {
-                    // m_log.DebugFormat("[SCENE]: Denying {0} because they are banned on all parcels", agentID);
+                    m_log.DebugFormat("[SCENE]: Denying {0} because they are banned on all parcels", agentID);
                     return false;
                 }
             }
@@ -5641,13 +5695,17 @@ namespace OpenSim.Region.Framework.Scenes
             {
                 ILandObject land = LandChannel.GetLandObject(position.X, position.Y);
                 if (land == null)
+                {
+                    m_log.DebugFormat("[SCENE]: Agent {0} has no parcel as target", agentID);
                     return false;
+                }
 
                 bool banned = land.IsBannedFromLand(agentID);
                 bool restricted = land.IsRestrictedFromLand(agentID);
 
                 if (banned || restricted)
                 {
+                    m_log.DebugFormat("[SCENE]: Agent {0} is banned or restricted", agentID);
                     return false;
                 }
             }
@@ -5804,6 +5862,40 @@ namespace OpenSim.Region.Framework.Scenes
             m_SimulationDataService.RemoveExtra(RegionInfo.RegionID, name);
 
             m_eventManager.TriggerExtraSettingChanged(this, name, String.Empty);
+        }
+
+        public bool AddOsslPerm(UUID key, string function)
+        {
+            if (string.IsNullOrEmpty(function))
+                return false;
+
+            m_DynaPerms.GetOrAddIfNotExists(function, delegate() { return new ThreadedClasses.RwLockedDictionary<UUID, bool>();})[key] = true;
+
+            return true;
+        }
+
+        public bool GetOsslPerms(UUID avatar, string function)
+        {
+            ThreadedClasses.RwLockedDictionary<UUID, bool> dynKeys;
+            if (m_DynaPerms.TryGetValue(function, out dynKeys))
+            {
+                return m_DynaPerms[function].ContainsKey(avatar);
+            }
+
+            return false;
+        }
+
+        public bool RemoveOsslPerm(UUID key, string function)
+        {
+            ThreadedClasses.RwLockedDictionary<UUID, bool> dynKeys;
+            if(m_DynaPerms.TryGetValue(function, out dynKeys))
+            {
+                if (dynKeys.Remove(key))
+                {
+                    m_DynaPerms.RemoveIf(function, delegate(ThreadedClasses.RwLockedDictionary<UUID, bool> val) { return val.Count == 0; });
+                }
+            }
+            return true;
         }
     }
 }

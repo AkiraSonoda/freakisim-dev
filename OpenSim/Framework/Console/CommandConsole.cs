@@ -400,6 +400,10 @@ namespace OpenSim.Framework.Console
 
             foreach (string s in cmd)
             {
+                // If a user puts an empty string on the console then this cannot be part of the command.
+                if (s == "")
+                    break;
+
                 index++;
 
                 List<string> found = new List<string>();

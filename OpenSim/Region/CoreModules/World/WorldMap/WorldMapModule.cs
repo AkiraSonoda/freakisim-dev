@@ -99,6 +99,8 @@ namespace OpenSim.Region.CoreModules.World.WorldMap
                 = Util.GetConfigVarFromSections<int>(config, "BlacklistTimeout", configSections, 10 * 60) * 1000;
 
             m_DisableMapItemsRequest = Util.GetConfigVarFromSections<bool>(config, "DisableMapItemsRequest", configSections, false);
+            // AKIDO Stupido Info ... but want to see it, will be removed ASAP
+            m_log.InfoFormat ("DisableMapItemRequest is: {0}", m_DisableMapItemsRequest);
         }
 
         public virtual void AddRegion (Scene scene)
@@ -771,8 +773,11 @@ namespace OpenSim.Region.CoreModules.World.WorldMap
 
             blacklisted = m_blacklistedregions.ContainsKey(regionhandle);
 
-            if (blacklisted || m_DisableMapItemsRequest)
-                return new OSDMap();
+            if (blacklisted || m_DisableMapItemsRequest) {
+                // AKIDO stupido Info ... but i want to see it ... will be removed ASAP
+                m_log.Info("DisableMapItemRequest or backlisted in place");
+                return (new OSDMap ());
+            }
 
             UUID requestID = UUID.Random();
             if(!m_cachedRegionMapItemsAddress.TryGetValue(regionhandle, out httpserver))
@@ -836,6 +841,7 @@ namespace OpenSim.Region.CoreModules.World.WorldMap
             WebRequest mapitemsrequest = null;
             try
             {
+                ServicePointManagerTimeoutSupport.ResetHosts();
                 mapitemsrequest = WebRequest.Create(httpserver);
             }
             catch (Exception e)
@@ -993,6 +999,10 @@ namespace OpenSim.Region.CoreModules.World.WorldMap
         /// <param name="maxY"></param>
         public virtual void RequestMapBlocks(IClientAPI remoteClient, int minX, int minY, int maxX, int maxY, uint flag)
         {
+            if (m_log.IsDebugEnabled) {
+                m_log.DebugFormat ("{0} ", System.Reflection.MethodBase.GetCurrentMethod ().Name);
+            }
+
             if ((flag & 0x10000) != 0)  // user clicked on qthe map a tile that isn't visible
             {
                 List<MapBlockData> response = new List<MapBlockData>();

@@ -51,7 +51,7 @@ namespace OpenSim.Framework.Serialization.External
         /// <param name="xtr"></param>
         /// <returns>true on successful, false if there were any processing failures</returns>
         public static bool ExecuteReadProcessors<NodeType>(
-            NodeType nodeToFill, Dictionary<string, Action<NodeType, XmlTextReader>> processors, XmlTextReader xtr)
+            NodeType nodeToFill, Dictionary<string, Action<NodeType, XmlReader>> processors, XmlReader xtr)
         {
             return ExecuteReadProcessors(
                 nodeToFill,
@@ -75,8 +75,8 @@ namespace OpenSim.Framework.Serialization.External
         /// <returns>true on successful, false if there were any processing failures</returns>
         public static bool ExecuteReadProcessors<NodeType>(
             NodeType nodeToFill,
-            Dictionary<string, Action<NodeType, XmlTextReader>> processors,
-            XmlTextReader xtr,
+            Dictionary<string, Action<NodeType, XmlReader>> processors,
+            XmlReader xtr,
             Action<NodeType, string, Exception> parseExceptionAction)
         {
             bool errors = false;
@@ -88,7 +88,7 @@ namespace OpenSim.Framework.Serialization.External
 
 //                        m_log.DebugFormat("[ExternalRepresentationUtils]: Processing: {0}", nodeName);
 
-                Action<NodeType, XmlTextReader> p = null;
+                Action<NodeType, XmlReader> p = null;
                 if (processors.TryGetValue(xtr.Name, out p))
                 {
 //                            m_log.DebugFormat("[ExternalRepresentationUtils]: Found {0} processor, nodeName);
@@ -131,7 +131,7 @@ namespace OpenSim.Framework.Serialization.External
                 return xml;
 
             XmlDocument doc = new XmlDocument();
-            doc.LoadXml(xml);
+            doc.LoadXml(xml.Replace("<SceneObjectPart xmlns:xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">", "<SceneObjectPart xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">"));
             XmlNodeList sops = doc.GetElementsByTagName("SceneObjectPart");
 
             foreach (XmlNode sop in sops)

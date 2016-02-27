@@ -30,6 +30,8 @@ using Nini.Config;
 using OpenMetaverse;
 using OpenSim.Framework;
 using OpenSim.Server.Base;
+using OpenSim.Framework.Communications;
+using OpenSim.Framework.ServiceAuth;
 using OpenSim.Services.Interfaces;
 using System;
 using System.Collections.Generic;
@@ -38,7 +40,7 @@ using GridRegion = OpenSim.Services.Interfaces.GridRegion;
 
 namespace OpenSim.Services.Connectors
 {
-    public class GridServicesConnector : IGridService
+    public class GridServicesConnector : BaseServiceConnector, IGridService
     {
         private static readonly ILog m_log =
                 LogManager.GetLogger(
@@ -78,6 +80,8 @@ namespace OpenSim.Services.Connectors
                 throw new Exception("Grid connector init error");
             }
             m_ServerURI = serviceURI;
+
+            base.Initialise(source, "GridService");
         }
 
 
@@ -100,7 +104,7 @@ namespace OpenSim.Services.Connectors
             // m_log.DebugFormat("[GRID CONNECTOR]: queryString = {0}", reqString);
             try
             {
-                string reply = SynchronousRestFormsRequester.MakeRequest("POST", uri, reqString);
+                string reply = SynchronousRestFormsRequester.MakeRequest("POST", uri, reqString, m_Auth);
                 if (reply != string.Empty)
                 {
                     Dictionary<string, object> replyData = ServerUtils.ParseXmlResponse(reply);
@@ -156,7 +160,7 @@ namespace OpenSim.Services.Connectors
             try
             {
                 string reply
-                    = SynchronousRestFormsRequester.MakeRequest("POST", uri, ServerUtils.BuildQueryString(sendData));
+                    = SynchronousRestFormsRequester.MakeRequest("POST", uri, ServerUtils.BuildQueryString(sendData), m_Auth);
 
                 if (reply != string.Empty)
                 {
@@ -193,7 +197,7 @@ namespace OpenSim.Services.Connectors
 
             try
             {
-                reply = SynchronousRestFormsRequester.MakeRequest("POST", uri, reqString);
+                reply = SynchronousRestFormsRequester.MakeRequest("POST", uri, reqString, m_Auth);
             }
             catch (Exception e)
             {
@@ -212,11 +216,18 @@ namespace OpenSim.Services.Connectors
                     if (r is Dictionary<string, object>)
                     {
                         GridRegion rinfo = new GridRegion((Dictionary<string, object>)r);
-                        if (Uri.IsWellFormedUriString(rinfo.ServerURI, UriKind.Absolute) && 
-                            rinfo.ExternalEndPoint.Port != 0 &&
-                            rinfo.HttpPort != 0)
+                        try
                         {
-                            rinfos.Add(rinfo);
+                            if (Uri.IsWellFormedUriString(rinfo.ServerURI, UriKind.Absolute) &&
+                                rinfo.ExternalEndPoint.Port != 0 &&
+                                rinfo.HttpPort != 0)
+                            {
+                                rinfos.Add(rinfo);
+                            }
+                        }
+                        catch
+                        {
+
                         }
                     }
                 }
@@ -241,7 +252,7 @@ namespace OpenSim.Services.Connectors
             string uri = m_ServerURI + "/grid";
             try
             {
-                reply = SynchronousRestFormsRequester.MakeRequest("POST", uri, ServerUtils.BuildQueryString(sendData));
+                reply = SynchronousRestFormsRequester.MakeRequest("POST", uri, ServerUtils.BuildQueryString(sendData), m_Auth);
             }
             catch (Exception e)
             {
@@ -270,6 +281,23 @@ namespace OpenSim.Services.Connectors
             else
                 m_log.DebugFormat("[GRID CONNECTOR]: GetRegionByUUID received null reply");
 
+            if(rinfo != null)
+            {
+                try
+                {
+                    if (!Uri.IsWellFormedUriString(rinfo.ServerURI, UriKind.Absolute) ||
+                        rinfo.ExternalEndPoint.Port == 0 ||
+                        rinfo.HttpPort == 0)
+                    {
+                        return null;
+                    }
+                }
+                catch
+                {
+                    return null;
+                }
+            }
+
             return rinfo;
         }
 
@@ -288,7 +316,7 @@ namespace OpenSim.Services.Connectors
             {
                 reply = SynchronousRestFormsRequester.MakeRequest("POST",
                         uri,
-                        ServerUtils.BuildQueryString(sendData));
+                        ServerUtils.BuildQueryString(sendData), m_Auth);
             }
             catch (Exception e)
             {
@@ -316,6 +344,23 @@ namespace OpenSim.Services.Connectors
             else
                 m_log.DebugFormat("[GRID CONNECTOR]: GetRegionByPosition received null reply");
 
+            if (rinfo != null)
+            {
+                try
+                {
+                    if (!Uri.IsWellFormedUriString(rinfo.ServerURI, UriKind.Absolute) ||
+                        rinfo.ExternalEndPoint.Port == 0 ||
+                        rinfo.HttpPort == 0)
+                    {
+                        return null;
+                    }
+                }
+                catch
+                {
+                    return null;
+                }
+            }
+
             return rinfo;
         }
 
@@ -333,7 +378,7 @@ namespace OpenSim.Services.Connectors
             {
                 reply = SynchronousRestFormsRequester.MakeRequest("POST",
                         uri,
-                        ServerUtils.BuildQueryString(sendData));
+                        ServerUtils.BuildQueryString(sendData), m_Auth);
             }
             catch (Exception e)
             {
@@ -358,6 +403,23 @@ namespace OpenSim.Services.Connectors
             else
                 m_log.DebugFormat("[GRID CONNECTOR]: GetRegionByName received null reply");
 
+            if (rinfo != null)
+            {
+                try
+                {
+                    if (!Uri.IsWellFormedUriString(rinfo.ServerURI, UriKind.Absolute) ||
+                        rinfo.ExternalEndPoint.Port == 0 ||
+                        rinfo.HttpPort == 0)
+                    {
+                        return null;
+                    }
+                }
+                catch
+                {
+                    return null;
+                }
+            }
+
             return rinfo;
         }
 
@@ -377,7 +439,7 @@ namespace OpenSim.Services.Connectors
             {
                 reply = SynchronousRestFormsRequester.MakeRequest("POST",
                         uri,
-                        ServerUtils.BuildQueryString(sendData));
+                        ServerUtils.BuildQueryString(sendData), m_Auth);
             }
             catch (Exception e)
             {
@@ -397,7 +459,19 @@ namespace OpenSim.Services.Connectors
                         if (r is Dictionary<string, object>)
                         {
                             GridRegion rinfo = new GridRegion((Dictionary<string, object>)r);
-                            rinfos.Add(rinfo);
+                            try
+                            {
+                                if (Uri.IsWellFormedUriString(rinfo.ServerURI, UriKind.Absolute) &&
+                                    rinfo.ExternalEndPoint.Port != 0 &&
+                                    rinfo.HttpPort != 0)
+                                {
+                                    rinfos.Add(rinfo);
+                                }
+                            }
+                            catch
+                            {
+
+                            }
                         }
                     }
                 }
@@ -413,6 +487,9 @@ namespace OpenSim.Services.Connectors
 
         public List<GridRegion> GetRegionRange(UUID scopeID, int xmin, int xmax, int ymin, int ymax)
         {
+            if (m_log.IsDebugEnabled) {
+                m_log.DebugFormat ("{0} ", System.Reflection.MethodBase.GetCurrentMethod ().Name);
+            }
             Dictionary<string, object> sendData = new Dictionary<string, object>();
 
             sendData["SCOPEID"] = scopeID.ToString();
@@ -431,7 +508,7 @@ namespace OpenSim.Services.Connectors
             {
                 reply = SynchronousRestFormsRequester.MakeRequest("POST",
                         uri,
-                        ServerUtils.BuildQueryString(sendData));
+                        ServerUtils.BuildQueryString(sendData), m_Auth);
 
                 //m_log.DebugFormat("[GRID CONNECTOR]: reply was {0}", reply);
             }
@@ -453,7 +530,19 @@ namespace OpenSim.Services.Connectors
                         if (r is Dictionary<string, object>)
                         {
                             GridRegion rinfo = new GridRegion((Dictionary<string, object>)r);
-                            rinfos.Add(rinfo);
+                            try
+                            {
+                                if (Uri.IsWellFormedUriString(rinfo.ServerURI, UriKind.Absolute) &&
+                                    rinfo.ExternalEndPoint.Port != 0 &&
+                                    rinfo.HttpPort != 0)
+                                {
+                                    rinfos.Add(rinfo);
+                                }
+                            }
+                            catch
+                            {
+
+                            }
                         }
                     }
                 }
@@ -482,7 +571,7 @@ namespace OpenSim.Services.Connectors
             {
                 reply = SynchronousRestFormsRequester.MakeRequest("POST",
                         uri,
-                        ServerUtils.BuildQueryString(sendData));
+                        ServerUtils.BuildQueryString(sendData), m_Auth);
 
                 //m_log.DebugFormat("[GRID CONNECTOR]: reply was {0}", reply);
             }
@@ -504,7 +593,19 @@ namespace OpenSim.Services.Connectors
                         if (r is Dictionary<string, object>)
                         {
                             GridRegion rinfo = new GridRegion((Dictionary<string, object>)r);
-                            rinfos.Add(rinfo);
+                            try
+                            {
+                                if (Uri.IsWellFormedUriString(rinfo.ServerURI, UriKind.Absolute) &&
+                                    rinfo.ExternalEndPoint.Port != 0 &&
+                                    rinfo.HttpPort != 0)
+                                {
+                                    rinfos.Add(rinfo);
+                                }
+                            }
+                            catch
+                            {
+
+                            }
                         }
                     }
                 }
@@ -533,7 +634,7 @@ namespace OpenSim.Services.Connectors
             {
                 reply = SynchronousRestFormsRequester.MakeRequest("POST",
                         uri,
-                        ServerUtils.BuildQueryString(sendData));
+                        ServerUtils.BuildQueryString(sendData), m_Auth);
 
                 //m_log.DebugFormat("[GRID CONNECTOR]: reply was {0}", reply);
             }
@@ -555,7 +656,19 @@ namespace OpenSim.Services.Connectors
                         if (r is Dictionary<string, object>)
                         {
                             GridRegion rinfo = new GridRegion((Dictionary<string, object>)r);
-                            rinfos.Add(rinfo);
+                            try
+                            {
+                                if (Uri.IsWellFormedUriString(rinfo.ServerURI, UriKind.Absolute) &&
+                                    rinfo.ExternalEndPoint.Port != 0 &&
+                                    rinfo.HttpPort != 0)
+                                {
+                                    rinfos.Add(rinfo);
+                                }
+                            }
+                            catch
+                            {
+
+                            }
                         }
                     }
                 }
@@ -586,7 +699,7 @@ namespace OpenSim.Services.Connectors
             {
                 reply = SynchronousRestFormsRequester.MakeRequest("POST",
                         uri,
-                        ServerUtils.BuildQueryString(sendData));
+                        ServerUtils.BuildQueryString(sendData), m_Auth);
 
                 //m_log.DebugFormat("[GRID CONNECTOR]: reply was {0}", reply);
             }
@@ -608,7 +721,19 @@ namespace OpenSim.Services.Connectors
                         if (r is Dictionary<string, object>)
                         {
                             GridRegion rinfo = new GridRegion((Dictionary<string, object>)r);
-                            rinfos.Add(rinfo);
+                            try
+                            {
+                                if (Uri.IsWellFormedUriString(rinfo.ServerURI, UriKind.Absolute) &&
+                                    rinfo.ExternalEndPoint.Port != 0 &&
+                                    rinfo.HttpPort != 0)
+                                {
+                                    rinfos.Add(rinfo);
+                                }
+                            }
+                            catch
+                            {
+
+                            }
                         }
                     }
                 }
@@ -637,7 +762,7 @@ namespace OpenSim.Services.Connectors
             {
                 reply = SynchronousRestFormsRequester.MakeRequest("POST",
                         uri,
-                        ServerUtils.BuildQueryString(sendData));
+                        ServerUtils.BuildQueryString(sendData), m_Auth);
 
                 //m_log.DebugFormat("[GRID CONNECTOR]: reply was {0}", reply);
             }
@@ -659,7 +784,19 @@ namespace OpenSim.Services.Connectors
                         if (r is Dictionary<string, object>)
                         {
                             GridRegion rinfo = new GridRegion((Dictionary<string, object>)r);
-                            rinfos.Add(rinfo);
+                            try
+                            {
+                                if (Uri.IsWellFormedUriString(rinfo.ServerURI, UriKind.Absolute) &&
+                                    rinfo.ExternalEndPoint.Port != 0 &&
+                                    rinfo.HttpPort != 0)
+                                {
+                                    rinfos.Add(rinfo);
+                                }
+                            }
+                            catch
+                            {
+
+                            }
                         }
                     }
                 }
@@ -688,7 +825,7 @@ namespace OpenSim.Services.Connectors
             {
                 reply = SynchronousRestFormsRequester.MakeRequest("POST",
                         uri,
-                        ServerUtils.BuildQueryString(sendData));
+                        ServerUtils.BuildQueryString(sendData), m_Auth);
             }
             catch (Exception e)
             {
@@ -719,6 +856,45 @@ namespace OpenSim.Services.Connectors
             return flags;
         }
 
+        public Dictionary<string, object> GetExtraFeatures()
+        {
+            Dictionary<string, object> sendData = new Dictionary<string, object>();
+            Dictionary<string, object> extraFeatures = new Dictionary<string, object>();
+
+            sendData["METHOD"] = "get_grid_extra_features";
+
+            string reply = string.Empty;
+            string uri = m_ServerURI + "/grid";
+
+            try
+            {
+                reply = SynchronousRestFormsRequester.MakeRequest("POST",
+                                                                  uri,
+                                                                  ServerUtils.BuildQueryString(sendData), m_Auth);
+            }
+            catch (Exception e)
+            {
+                m_log.DebugFormat("[GRID CONNECTOR]: GetExtraFeatures - Exception when contacting grid server at {0}: {1}", uri, e.Message);
+                return extraFeatures;
+            }
+
+            if (reply != string.Empty)
+            {
+                Dictionary<string, object> replyData = ServerUtils.ParseXmlResponse(reply);
+                
+                if ((replyData != null) && replyData.Count > 0)
+                {
+                    foreach (string key in replyData.Keys)
+                    {
+                        extraFeatures[key] = replyData[key].ToString();
+                    }
+                }
+            }
+            else
+                m_log.DebugFormat("[GRID CONNECTOR]: GetExtraServiceURLs received null reply");
+
+            return extraFeatures;
+        }
         #endregion
 
     }

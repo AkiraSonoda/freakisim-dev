@@ -109,7 +109,7 @@ namespace OpenSim.Groups
             if (!m_groupMessagingEnabled)
                 return;
 
-            m_messageOnlineAgentsOnly = groupsConfig.GetBoolean("MessageOnlineUsersOnly", false);
+            m_messageOnlineAgentsOnly = groupsConfig.GetBoolean("MessageOnlineUsersOnly", true);
 
             if (m_messageOnlineAgentsOnly)
             {
@@ -297,6 +297,13 @@ namespace OpenSim.Groups
             if (thisClient != null)
             {
                 im.RegionID = thisClient.Scene.RegionInfo.RegionID.Guid;
+            }
+
+            if ((im.binaryBucket == null) || (im.binaryBucket.Length == 0) || ((im.binaryBucket.Length == 1 && im.binaryBucket[0] == 0)))
+            {
+                ExtendedGroupRecord groupInfo = m_groupData.GetGroupRecord(UUID.Zero.ToString(), groupID, null);
+                if (groupInfo != null)
+                    im.binaryBucket = Util.StringToBytes256(groupInfo.GroupName);
             }
 
             // Send to self first of all

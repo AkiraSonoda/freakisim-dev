@@ -276,8 +276,13 @@ namespace OpenSim.Region.Framework.Scenes
             get { return m_appearance; }
             set
             {
+                m_log.Info("SETAPPEARANCE");
                 m_appearance = value;
-//                m_log.DebugFormat("[SCENE PRESENCE]: Set appearance for {0} to {1}", Name, value);
+
+                if (m_log.IsDebugEnabled) {
+                    m_log.DebugFormat ("{0} called", System.Reflection.MethodBase.GetCurrentMethod().Name);
+                    m_log.DebugFormat ("Dump of incoming appearance: {0}", value.ToString());
+                }
             }
         }
 
@@ -337,6 +342,12 @@ namespace OpenSim.Region.Framework.Scenes
         /// it is a value type.
         /// </summary>
         private object m_originRegionIDAccessLock = new object();
+
+        /// <summary>
+        /// Triggered on entity transfer after to allow CompleteMovement() to proceed after we have received an
+        /// UpdateAgent from the originating region.ddkjjkj
+        /// </summary>
+        private AutoResetEvent m_updateAgentReceivedAfterTransferEvent = new AutoResetEvent(false);
 
         /// <summary>
         /// Used by the entity transfer module to signal when the presence should not be closed because a subsequent
@@ -541,7 +552,7 @@ namespace OpenSim.Region.Framework.Scenes
                     SceneObjectPart sitPart = ParentPart;
 
                     if (sitPart != null)
-                        return sitPart.ParentGroup.AbsolutePosition + (m_pos * sitPart.GetWorldRotation());
+                        return sitPart.ParentGroup.AbsolutePosition + (m_pos * sitPart.WorldRotation);
                 }
                 
                 return m_pos;
@@ -595,8 +606,11 @@ namespace OpenSim.Region.Framework.Scenes
         }
 
         /// <summary>
-        /// Current velocity of the avatar.
+        /// Velocity of the avatar with respect to its local reference frame.
         /// </summary>
+        /// <remarks>
+        /// So when sat on a vehicle this will be 0.  To get velocity with respect to the world use GetWorldVelocity()
+        /// </remarks>
         public override Vector3 Velocity
         {
             get
@@ -737,17 +751,36 @@ namespace OpenSim.Region.Framework.Scenes
         /// Unlike Rotation, this returns the world rotation no matter whether the avatar is sitting on a prim or not.
         /// </remarks>
         /// <returns></returns>
-        public Quaternion GetWorldRotation()
+        public Quaternion WorldRotation
         {
-            if (IsSatOnObject)
+            get
+            {
+                if (IsSatOnObject)
+                {
+                    SceneObjectPart sitPart = ParentPart;
+
+                    if (sitPart != null)
+                        return sitPart.WorldRotation * Rotation;
+                }
+
+                return Rotation;
+            }
+        }
+
+        /// <summary>
+        /// Get velocity relative to the world.
+        /// </summary>
+        public Vector3 WorldVelocity
+        {
+            get
             {
                 SceneObjectPart sitPart = ParentPart;
 
                 if (sitPart != null)
-                    return sitPart.GetWorldRotation() * Rotation;
-            }
+                    return sitPart.ParentGroup.Velocity;
 
-            return Rotation;
+                return Velocity;
+            }
         }
 
         public void AdjustKnownSeeds()
@@ -853,6 +886,11 @@ namespace OpenSim.Region.Framework.Scenes
         {
             get { return Util.GetViewerName(m_scene.AuthenticateHandler.GetAgentCircuitData(ControllingClient.CircuitCode)); }
         }
+
+        /// <summary>
+        /// Count of how many terse updates we have sent out.  It doesn't matter if this overflows.
+        /// </summary>
+        private int m_terseUpdateCount;
 
         #endregion
 
@@ -1031,7 +1069,7 @@ namespace OpenSim.Region.Framework.Scenes
                         ParentPart = part;
                         m_pos = PrevSitOffset;
     //                    pos = ParentPosition;
-                        pos = part.GetWorldPosition();
+                        pos = part.WorldPosition;
                     }
                     ParentUUID = UUID.Zero;
 
@@ -1678,20 +1716,12 @@ namespace OpenSim.Region.Framework.Scenes
             // (which triggers Scene.IncomingUpdateChildAgent(AgentData cAgentData) here in the destination, 
             // m_originRegionID is UUID.Zero; after, it's non-Zero.  The CompleteMovement sequence initiated from the
             // viewer (in turn triggered by the source region sending it a TeleportFinish event) waits until it's non-zero
-            int count = 50;
+            m_updateAgentReceivedAfterTransferEvent.WaitOne(10000);
+
             UUID originID;
 
             lock (m_originRegionIDAccessLock)
                 originID = m_originRegionID;
-
-            while (originID.Equals(UUID.Zero) && count-- > 0)
-            {
-                lock (m_originRegionIDAccessLock)
-                    originID = m_originRegionID;
-
-                m_log.DebugFormat("[SCENE PRESENCE]: Agent {0} waiting for update in {1}", client.Name, Scene.Name);
-                Thread.Sleep(200);
-            }
 
             if (originID.Equals(UUID.Zero))
             {
@@ -1721,7 +1751,7 @@ namespace OpenSim.Region.Framework.Scenes
                 client.Name, Scene.Name, AbsolutePosition);
 
             // Make sure it's not a login agent. We don't want to wait for updates during login
-			if (!(PresenceType == PresenceType.Npc || IsRealLogin(m_teleportFlags)))
+            if (!(PresenceType == PresenceType.Npc || IsRealLogin(m_teleportFlags)))
             {
                 // Let's wait until UpdateAgent (called by departing region) is done
                 if (!WaitForUpdateAgent(client))
@@ -1780,12 +1810,7 @@ namespace OpenSim.Region.Framework.Scenes
                     "[SCENE PRESENCE]: Releasing {0} {1} with callback to {2}",
                     client.Name, client.AgentId, m_callbackURI);
 
-                UUID originID;
-
-                lock (m_originRegionIDAccessLock)
-                    originID = m_originRegionID;
-
-                Scene.SimulationService.ReleaseAgent(originID, UUID, m_callbackURI);
+                Scene.SimulationService.ReleaseAgent(m_originRegionID, UUID, m_callbackURI);
                 m_callbackURI = null;
             }
 //            else
@@ -2615,7 +2640,7 @@ namespace OpenSim.Region.Framework.Scenes
                     }
                 }
 
-                Vector3 sitPartWorldPosition = part.GetWorldPosition();
+                Vector3 sitPartWorldPosition = part.WorldPosition;
                 ControllingClient.SendClearFollowCamProperties(part.ParentUUID);
 
                 ParentID = 0;
@@ -2625,7 +2650,7 @@ namespace OpenSim.Region.Framework.Scenes
 
                 if (part.SitTargetAvatar == UUID)
                 {
-                    standRotation = part.GetWorldRotation();
+                    standRotation = part.WorldRotation;
 
                     if (!part.IsRoot)
                         standRotation = standRotation * part.SitTargetOrientation;
@@ -2644,13 +2669,13 @@ namespace OpenSim.Region.Framework.Scenes
 
 //                Vector3 standPositionAdjustment 
 //                    = part.SitTargetPosition + new Vector3(0.5f, 0f, m_sitAvatarHeight / 2f);
-                Vector3 adjustmentForSitPosition = part.SitTargetPosition * part.GetWorldRotation();
+                Vector3 adjustmentForSitPosition = (OffsetPosition - SIT_TARGET_ADJUSTMENT) * part.WorldRotation;
 
                 // XXX: This is based on the physics capsule sizes.  Need to find a better way to read this rather than
                 // hardcoding here.
                 Vector3 adjustmentForSitPose = new Vector3(0.74f, 0f, 0f) * standRotation;
 
-                Vector3 standPos = sitPartWorldPosition + adjustmentForSitPosition + adjustmentForSitPose;
+                Vector3 standPos = part.ParentGroup.AbsolutePosition + adjustmentForSitPosition + adjustmentForSitPose;
 
 //                m_log.DebugFormat(
 //                    "[SCENE PRESENCE]: Setting stand to pos {0}, (adjustmentForSitPosition {1}, adjustmentForSitPose {2}) rotation {3} for {4} in {5}", 
@@ -2903,7 +2928,7 @@ namespace OpenSim.Region.Framework.Scenes
             if (part == null)
                 return;
 
-            Vector3 targetPos = part.GetWorldPosition() + offset * part.GetWorldRotation();     
+            Vector3 targetPos = part.WorldPosition + offset * part.WorldRotation;
             if(!CanEnterLandPosition(targetPos))
             {
                 ControllingClient.SendAlertMessage(" Sit position on restricted land, try another spot");
@@ -3184,10 +3209,6 @@ namespace OpenSim.Region.Framework.Scenes
 
         public override void Update()
         {
-            const float ROTATION_TOLERANCE = 0.01f;
-            const float VELOCITY_TOLERANCE = 0.001f;
-            const float POSITION_TOLERANCE = 0.05f;
-
             if (IsChildAgent == false)
             {
                 // NOTE: Velocity is not the same as m_velocity. Velocity will attempt to
@@ -3204,9 +3225,9 @@ namespace OpenSim.Region.Framework.Scenes
 
                 if (!updateClients)
                     updateClients 
-                        = !Rotation.ApproxEquals(m_lastRotation, ROTATION_TOLERANCE) 
-                            || !Velocity.ApproxEquals(m_lastVelocity, VELOCITY_TOLERANCE)
-                            || !m_pos.ApproxEquals(m_lastPosition, POSITION_TOLERANCE);
+						= !Rotation.ApproxEquals(m_lastRotation, Scene.RootRotationUpdateTolerance) 
+						|| !Velocity.ApproxEquals(m_lastVelocity, Scene.RootVelocityUpdateTolerance)
+						|| !m_pos.ApproxEquals(m_lastPosition, Scene.RootPositionUpdateTolerance);
 
                 if (updateClients)
                 {
@@ -3239,6 +3260,29 @@ namespace OpenSim.Region.Framework.Scenes
             // server.
             if (remoteClient.IsActive)
             {
+                if (Scene.RootTerseUpdatePeriod > 1)
+                {
+                    //                    Console.WriteLine(
+                    //                        "{0} {1} {2} {3} {4} {5} for {6} to {7}", 
+                    //                        remoteClient.AgentId, UUID, remoteClient.SceneAgent.IsChildAgent, m_terseUpdateCount, Scene.RootTerseUpdatePeriod, Velocity.ApproxEquals(Vector3.Zero, 0.001f), Name, remoteClient.Name);
+                    if (remoteClient.AgentId != UUID
+                        && !remoteClient.SceneAgent.IsChildAgent
+                        && m_terseUpdateCount % Scene.RootTerseUpdatePeriod != 0 
+                        && !Velocity.ApproxEquals(Vector3.Zero, 0.001f))
+                    {
+                        //                        m_log.DebugFormat("[SCENE PRESENCE]: Discarded update from {0} to {1}, args {2} {3} {4} {5} {6} {7}",
+                        //                            Name, remoteClient.Name, remoteClient.AgentId, UUID, remoteClient.SceneAgent.IsChildAgent, m_terseUpdateCount, Scene.RootTerseUpdatePeriod, Velocity.ApproxEquals(Vector3.Zero, 0.001f));
+
+                        return;
+                    }
+                }
+
+                if (Scene.ChildTerseUpdatePeriod > 1 
+                    && remoteClient.SceneAgent.IsChildAgent
+                    && m_terseUpdateCount % Scene.ChildTerseUpdatePeriod != 0 
+                    && !Velocity.ApproxEquals(Vector3.Zero, 0.001f))
+                    return;
+
                 //m_log.DebugFormat("[SCENE PRESENCE]: " + Name + " sending TerseUpdate to " + remoteClient.Name + " : Pos={0} Rot={1} Vel={2}", m_pos, Rotation, m_velocity);
 
                 remoteClient.SendEntityUpdate(
@@ -3289,6 +3333,8 @@ namespace OpenSim.Region.Framework.Scenes
                 lastVelocitySentToAllClients = Velocity;
                 lastTerseUpdateToAllClientsTick = currentTick;
                 lastPositionSentToAllClients = OffsetPosition;
+
+                m_terseUpdateCount++;
 
 //                Console.WriteLine("Scheduled update for {0} in {1}", Name, Scene.Name);
                 m_scene.ForEachClient(SendTerseUpdateToClient);
@@ -3810,6 +3856,8 @@ namespace OpenSim.Region.Framework.Scenes
                 return;
 
             CopyFrom(cAgentData);
+
+            m_updateAgentReceivedAfterTransferEvent.Set();
         }
 
         private static Vector3 marker = new Vector3(-1f, -1f, -1f);
@@ -5024,7 +5072,7 @@ namespace OpenSim.Region.Framework.Scenes
             detobj.nameStr = obj.Name;
             detobj.ownerUUID = obj.OwnerID;
             detobj.posVector = obj.AbsolutePosition;
-            detobj.rotQuat = obj.GetWorldRotation();
+            detobj.rotQuat = obj.WorldRotation;
             detobj.velVector = obj.Velocity;
             detobj.colliderType = 0;
             detobj.groupUUID = obj.GroupID;

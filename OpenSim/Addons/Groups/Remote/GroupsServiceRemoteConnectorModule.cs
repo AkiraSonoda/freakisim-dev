@@ -66,13 +66,7 @@ namespace OpenSim.Groups
 
         private void Init(IConfigSource config)
         {
-            IConfig groupsConfig = config.Configs["Groups"];
-            string url = groupsConfig.GetString("GroupsServerURI", string.Empty);
-            if (!Uri.IsWellFormedUriString(url, UriKind.Absolute))
-                throw new Exception(string.Format("[Groups.RemoteConnector]: Malformed groups server URL {0}. Fix it or disable the Groups feature.", url));
-
-            string secret = groupsConfig.GetString("SecretKey", string.Empty);
-            m_GroupsService = new GroupsServiceRemoteConnector(url, secret);
+            m_GroupsService = new GroupsServiceRemoteConnector(config);
             m_Scenes = new List<Scene>();
 
         }
@@ -251,6 +245,14 @@ namespace OpenSim.Groups
             {
                 return m_GroupsService.GetMemberships(RequestingAgentID, AgentID);
             });
+        }
+
+        public List<GroupMembershipData> GetAgentGroupMemberships(string RequestingAgentID, string AgentID, bool forceUpdate)
+        {
+            return m_CacheWrapper.GetAgentGroupMemberships(AgentID, delegate
+            {
+                return m_GroupsService.GetMemberships(RequestingAgentID, AgentID);
+            }, forceUpdate);
         }
 
 

@@ -451,8 +451,15 @@ namespace OpenSim.Framework
         {
             if(m_log.IsDebugEnabled) m_log.DebugFormat("set wearable {0}",wearableId);
             m_wearables[wearableId].Clear();
-            for (int i = 0; i < wearable.Count; i++)
+            int count = wearable.Count;
+            if (count > AvatarWearable.MAX_WEARABLES)
+            {
+                count = AvatarWearable.MAX_WEARABLES;
+            }
+            for (int i = 0; i < count; i++)
+            {
                 m_wearables[wearableId].Add(wearable[i].ItemID, wearable[i].AssetID);
+            }
         }
 
         public override String ToString()
@@ -508,14 +515,10 @@ namespace OpenSim.Framework
 //            m_log.DebugFormat(
 //                "[AVATAR APPEARNCE]: Appending itemID={0}, assetID={1} at {2}",
 //                attach.ItemID, attach.AssetID, attach.AttachPoint);
-
-			foreach (AvatarAttachment prev in m_attachments[attach.AttachPoint]) {
-				if (prev.ItemID == attach.ItemID) {
-					return;
-				}
-			}
-
-            m_attachments[attach.AttachPoint].Add(attach);
+            if (m_attachments[attach.AttachPoint].Find(delegate(AvatarAttachment a) { return a.ItemID == attach.ItemID;  }) == null)
+            {
+                m_attachments[attach.AttachPoint].Add(attach);
+            }
         }
 
         internal void ReplaceAttachment(AvatarAttachment attach)

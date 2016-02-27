@@ -26,57 +26,13 @@
  */
 
 using log4net;
+using OpenMetaverse;
 using System;
 using System.IO;
 using System.Reflection;
 
 namespace OpenSim.Framework
 {
-    public abstract class TerrainData
-    {
-        // Terrain always is a square
-        public int SizeX { get; protected set; }
-        public int SizeY { get; protected set; }
-        public int SizeZ { get; protected set; }
-
-        // A height used when the user doesn't specify anything
-        public const float DefaultTerrainHeight = 21f;
-
-        public abstract float this[int x, int y] { get; set; }
-        // Someday terrain will have caves
-        public abstract float this[int x, int y, int z] { get; set; }
-
-        public abstract bool IsTaintedAt(int xx, int yy);
-        public abstract bool IsTaintedAt(int xx, int yy, bool clearOnTest);
-        public abstract void TaintAllTerrain();
-        public abstract void ClearTaint();
-
-        public abstract void ClearLand();
-        public abstract void ClearLand(float height);
-
-        // Return a representation of this terrain for storing as a blob in the database.
-        // Returns 'true' to say blob was stored in the 'out' locations.
-        public abstract bool GetDatabaseBlob(out int DBFormatRevisionCode, out Array blob);
-
-        // Given a revision code and a blob from the database, create and return the right type of TerrainData.
-        // The sizes passed are the expected size of the region. The database info will be used to
-        //     initialize the heightmap of that sized region with as much data is in the blob.
-        // Return created TerrainData or 'null' if unsuccessful.
-        public static TerrainData CreateFromDatabaseBlobFactory(int pSizeX, int pSizeY, int pSizeZ, int pFormatCode, byte[] pBlob)
-        {
-            // For the moment, there is only one implementation class
-            return new HeightmapTerrainData(pSizeX, pSizeY, pSizeZ, pFormatCode, pBlob);
-        }
-
-        // return a special compressed representation of the heightmap in ints
-        public abstract int[] GetCompressedMap();
-        public abstract float CompressionFactor { get; }
-
-        public abstract float[] GetFloatsSerialized();
-        public abstract double[,] GetDoubles();
-        public abstract TerrainData Clone();
-    }
-
     // The terrain is stored in the database as a blob with a 'revision' field.
     // Some implementations of terrain storage would fill the revision field with
     //    the time the terrain was stored. When real revisions were added and this
@@ -107,40 +63,74 @@ namespace OpenSim.Framework
     //    of 'patches' which are 16x16 terrain areas which can be sent separately to the viewer.
     // The heighmap is kept as an array of integers. The integer values are converted to
     //    and from floats by TerrainCompressionFactor.
-    public class HeightmapTerrainData : TerrainData
+    public class HeightMapTerrainData
     {
+        public int SizeX { get; protected set; }
+        public int SizeY { get; protected set; }
+        public int SizeZ { get; protected set; }
+
+        // A height used when the user doesn't specify anything
+        public const float DefaultTerrainHeight = 21f;
+
+        // Given a revision code and a blob from the database, create and return the right type of TerrainData.
+        // The sizes passed are the expected size of the region. The database info will be used to
+        //     initialize the heightmap of that sized region with as much data is in the blob.
+        // Return created TerrainData or 'null' if unsuccessful.
+        public static HeightMapTerrainData CreateFromDatabaseBlobFactory(int pSizeX, int pSizeY, int pSizeZ, int pFormatCode, byte[] pBlob)
+        {
+            // For the moment, there is only one implementation class
+            return new HeightMapTerrainData(pSizeX, pSizeY, pSizeZ, pFormatCode, pBlob);
+        }
+
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
         private static string LogHeader = "[HEIGHTMAP TERRAIN DATA]";
 
+        public uint[,] m_TerrainPatchSerial;
+        struct TerrainPatchInfo
+        {
+            public uint Serial; /* 0 == invalid, m_TerrainPatchSerial never holds any zeroes */
+            public byte[] CompressedPatch;
+            public int BitLength;
+        }
+        TerrainPatchInfo[,] m_PackedTerrainPatches;
+        object m_PackedSerialLock = new object();
+
         // TerrainData.this[x, y]
-        public override float this[int x, int y]
+        public float this[int x, int y]
         {
             get { return FromCompressedHeight(m_heightmap[x, y]); }
             set {
                 int newVal = ToCompressedHeight(value);
-                if (m_heightmap[x, y] != newVal)
+                lock (m_PackedSerialLock)
                 {
-                    m_heightmap[x, y] = newVal;
-                    m_taint[x / Constants.TerrainPatchSize, y / Constants.TerrainPatchSize] = true;
+                    if (m_heightmap[x, y] != newVal)
+                    {
+                        m_heightmap[x, y] = newVal;
+                        m_taint[x / Constants.TerrainPatchSize, y / Constants.TerrainPatchSize] = true;
+                        if(++m_TerrainPatchSerial[x / Constants.TerrainPatchSize, y / Constants.TerrainPatchSize] == 0)
+                        {
+                            m_TerrainPatchSerial[x / Constants.TerrainPatchSize, y / Constants.TerrainPatchSize] = 1;
+                        }
+                    }
                 }
             }
         }
 
         // TerrainData.this[x, y, z]
-        public override float this[int x, int y, int z]
+        public float this[int x, int y, int z]
         {
             get { return this[x, y]; }
             set { this[x, y] = value; }
         }
 
         // TerrainData.ClearTaint
-        public override void ClearTaint()
+        public void ClearTaint()
         {
             SetAllTaint(false);
         }
 
         // TerrainData.TaintAllTerrain
-        public override void TaintAllTerrain()
+        public void TaintAllTerrain()
         {
             SetAllTaint(true);
         }
@@ -153,23 +143,30 @@ namespace OpenSim.Framework
         }
 
         // TerrainData.ClearLand
-        public override void ClearLand()
+        public void ClearLand()
         {
             ClearLand(DefaultTerrainHeight);
         }
         // TerrainData.ClearLand(float)
-        public override void ClearLand(float pHeight)
+        public void ClearLand(float pHeight)
         {
             int flatHeight = ToCompressedHeight(pHeight);
             for (int xx = 0; xx < SizeX; xx++)
                 for (int yy = 0; yy < SizeY; yy++)
-                    m_heightmap[xx, yy] = flatHeight;
+                    lock (m_PackedSerialLock)
+                    {
+                        m_heightmap[xx, yy] = flatHeight;
+                        if (++m_TerrainPatchSerial[xx / Constants.TerrainPatchSize, yy / Constants.TerrainPatchSize] == 0)
+                        {
+                            m_TerrainPatchSerial[xx / Constants.TerrainPatchSize, yy / Constants.TerrainPatchSize] = 1;
+                        }
+                    }
         }
 
         // Return 'true' of the patch that contains these region coordinates has been modified.
         // Note that checking the taint clears it.
         // There is existing code that relies on this feature.
-        public override bool IsTaintedAt(int xx, int yy, bool clearOnTest)
+        public bool IsTaintedAt(int xx, int yy, bool clearOnTest)
         {
             int tx = xx / Constants.TerrainPatchSize;
             int ty = yy / Constants.TerrainPatchSize;
@@ -180,14 +177,14 @@ namespace OpenSim.Framework
         }
 
         // Old form that clears the taint flag when we check it.
-        public override bool IsTaintedAt(int xx, int yy)
+        public bool IsTaintedAt(int xx, int yy)
         {
             return IsTaintedAt(xx, yy, true /* clearOnTest */);
         }
 
         // TerrainData.GetDatabaseBlob
         // The user wants something to store in the database.
-        public override bool GetDatabaseBlob(out int DBRevisionCode, out Array blob)
+        public bool GetDatabaseBlob(out int DBRevisionCode, out Array blob)
         {
             bool ret = false;
             if (SizeX == Constants.RegionSize && SizeY == Constants.RegionSize)
@@ -207,10 +204,10 @@ namespace OpenSim.Framework
 
         // TerrainData.CompressionFactor
         private float m_compressionFactor = 100.0f;
-        public override float CompressionFactor { get { return m_compressionFactor; } }
+        public float CompressionFactor { get { return m_compressionFactor; } }
 
         // TerrainData.GetCompressedMap
-        public override int[] GetCompressedMap()
+        public int[] GetCompressedMap()
         {
             int[] newMap = new int[SizeX * SizeY];
 
@@ -223,9 +220,9 @@ namespace OpenSim.Framework
 
         }
         // TerrainData.Clone
-        public override TerrainData Clone()
+        public HeightMapTerrainData Clone()
         {
-            HeightmapTerrainData ret = new HeightmapTerrainData(SizeX, SizeY, SizeZ);
+            HeightMapTerrainData ret = new HeightMapTerrainData(SizeX, SizeY, SizeZ);
             ret.m_heightmap = (int[,])this.m_heightmap.Clone();
             return ret;
         }
@@ -234,7 +231,7 @@ namespace OpenSim.Framework
         // This one dimensional version is ordered so height = map[y*sizeX+x];
         // DEPRECATED: don't use this function as it does not retain the dimensions of the terrain
         //     and the caller will probably do the wrong thing if the terrain is not the legacy 256x256.
-        public override float[] GetFloatsSerialized()
+        public float[] GetFloatsSerialized()
         {
             int points = SizeX * SizeY;
             float[] heights = new float[points];
@@ -250,7 +247,7 @@ namespace OpenSim.Framework
         }
 
         // TerrainData.GetDoubles
-        public override double[,] GetDoubles()
+        public double[,] GetDoubles()
         {
             double[,] ret = new double[SizeX, SizeY];
             for (int xx = 0; xx < SizeX; xx++)
@@ -280,9 +277,23 @@ namespace OpenSim.Framework
             return ((float)pHeight) / CompressionFactor;
         }
 
+        void InitTerrainPatchCompressor()
+        {
+            /* tracking a serial allows a far more optimized handling of layer data transmission */
+            m_TerrainPatchSerial = new uint[SizeX / Constants.TerrainPatchSize, SizeY / Constants.TerrainPatchSize];
+            for (uint px = 0; px < SizeX / Constants.TerrainPatchSize; ++px)
+            {
+                for (uint py = 0; py < SizeY / Constants.TerrainPatchSize; ++py)
+                {
+                    m_TerrainPatchSerial[px, py] = 1;
+                }
+            }
+            m_PackedTerrainPatches = new TerrainPatchInfo[SizeX / Constants.TerrainPatchSize, SizeY / Constants.TerrainPatchSize];
+        }
+
         // To keep with the legacy theme, create an instance of this class based on the
         //     way terrain used to be passed around.
-        public HeightmapTerrainData(double[,] pTerrain)
+        public HeightMapTerrainData(double[,] pTerrain)
         {
             SizeX = pTerrain.GetLength(0);
             SizeY = pTerrain.GetLength(1);
@@ -298,6 +309,9 @@ namespace OpenSim.Framework
 
                 }
             }
+
+            InitTerrainPatchCompressor();
+
             // m_log.DebugFormat("{0} new by doubles. sizeX={1}, sizeY={2}, sizeZ={3}", LogHeader, SizeX, SizeY, SizeZ);
 
             m_taint = new bool[SizeX / Constants.TerrainPatchSize, SizeY / Constants.TerrainPatchSize];
@@ -305,7 +319,7 @@ namespace OpenSim.Framework
         }
 
         // Create underlying structures but don't initialize the heightmap assuming the caller will immediately do that
-        public HeightmapTerrainData(int pX, int pY, int pZ)
+        public HeightMapTerrainData(int pX, int pY, int pZ)
         {
             SizeX = pX;
             SizeY = pY;
@@ -313,12 +327,16 @@ namespace OpenSim.Framework
             m_compressionFactor = 100.0f;
             m_heightmap = new int[SizeX, SizeY];
             m_taint = new bool[SizeX / Constants.TerrainPatchSize, SizeY / Constants.TerrainPatchSize];
+
+            InitTerrainPatchCompressor();
+
             // m_log.DebugFormat("{0} new by dimensions. sizeX={1}, sizeY={2}, sizeZ={3}", LogHeader, SizeX, SizeY, SizeZ);
             ClearTaint();
             ClearLand(0f);
         }
 
-        public HeightmapTerrainData(int[] cmap, float pCompressionFactor, int pX, int pY, int pZ) : this(pX, pY, pZ)
+        public HeightMapTerrainData(int[] cmap, float pCompressionFactor, int pX, int pY, int pZ) 
+            : this(pX, pY, pZ)
         {
             m_compressionFactor = pCompressionFactor;
             int ind = 0;
@@ -329,7 +347,8 @@ namespace OpenSim.Framework
         }
 
         // Create a heighmap from a database blob
-        public HeightmapTerrainData(int pSizeX, int pSizeY, int pSizeZ, int pFormatCode, byte[] pBlob) : this(pSizeX, pSizeY, pSizeZ)
+        public HeightMapTerrainData(int pSizeX, int pSizeY, int pSizeZ, int pFormatCode, byte[] pBlob)
+            : this(pSizeX, pSizeY, pSizeZ)
         {
             switch ((DBTerrainRevision)pFormatCode)
             {
@@ -385,7 +404,16 @@ namespace OpenSim.Framework
                         {
                             float val = (float)br.ReadDouble();
                             if (xx < SizeX && yy < SizeY)
-                                m_heightmap[xx, yy] = ToCompressedHeight(val);
+                            {
+                                lock (m_PackedSerialLock)
+                                {
+                                    m_heightmap[xx, yy] = ToCompressedHeight(val);
+                                    if (++m_TerrainPatchSerial[xx / Constants.TerrainPatchSize, yy / Constants.TerrainPatchSize] == 0)
+                                    {
+                                        m_TerrainPatchSerial[xx / Constants.TerrainPatchSize, yy / Constants.TerrainPatchSize] = 1;
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -446,7 +474,16 @@ namespace OpenSim.Framework
                         {
                             Int16 val = br.ReadInt16();
                             if (xx < SizeX && yy < SizeY)
-                                m_heightmap[xx, yy] = val;
+                            {
+                                lock(m_PackedSerialLock)
+                                {
+                                    m_heightmap[xx, yy] = val;
+                                    if(++m_TerrainPatchSerial[xx / Constants.TerrainPatchSize, yy / Constants.TerrainPatchSize] == 0)
+                                    {
+                                        m_TerrainPatchSerial[xx / Constants.TerrainPatchSize, yy / Constants.TerrainPatchSize] = 1;
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -455,6 +492,44 @@ namespace OpenSim.Framework
                 m_log.InfoFormat("{0} Read compressed 2d heightmap. Heightmap size=<{1},{2}>. Region size=<{3},{4}>. CompFact={5}",
                                 LogHeader, hmSizeX, hmSizeY, SizeX, SizeY, hmCompressionFactor);
             }
+        }
+
+        public byte[] GetCompressedPatch(int patchx, int patchy, out int bitlength, uint lastSerialNo, out uint serialNo)
+        {
+            lock(m_PackedSerialLock)
+            {
+#if UPDATE_TERRAIN_ONLY_WHEN_NECESSARY
+                if(m_PackedTerrainPatches[patchx, patchy].Serial == lastSerialNo && 0 != lastSerialNo)
+                {
+                    /* signal no change via null */
+                    serialNo = lastSerialNo;
+                    bitlength = 0;
+                    return null;
+                }
+
+                if(m_PackedTerrainPatches[patchx, patchy].Serial != m_TerrainPatchSerial[patchx, patchy])
+#endif
+                {
+
+                    m_PackedTerrainPatches[patchx, patchy].Serial = m_TerrainPatchSerial[patchx, patchy];
+                    m_PackedTerrainPatches[patchx, patchy].CompressedPatch = new byte[651]; /* maximum length of a single compressed patch */
+                    BitPack bitpack = new BitPack(m_PackedTerrainPatches[patchx, patchy].CompressedPatch, 0);
+                    OpenSimTerrainCompressor.CreatePatchFromHeightmap(bitpack, this, patchx, patchy);
+                    m_PackedTerrainPatches[patchx, patchy].BitLength = 8 * bitpack.BytePos + bitpack.BitPos;
+                    if(0 == bitpack.BitPos)
+                    {
+                        m_PackedTerrainPatches[patchx, patchy].BitLength += 8;
+                    }
+                }
+
+                bitlength = m_PackedTerrainPatches[patchx, patchy].BitLength;
+                byte[] copy = new byte[m_PackedTerrainPatches[patchx, patchy].CompressedPatch.Length];
+                Buffer.BlockCopy(m_PackedTerrainPatches[patchx, patchy].CompressedPatch, 0, copy, 0, copy.Length);
+                serialNo = m_PackedTerrainPatches[patchx, patchy].Serial;
+
+                return copy;
+            }
+
         }
     }
 }

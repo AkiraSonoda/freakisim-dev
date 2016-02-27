@@ -420,6 +420,22 @@ namespace OpenSim.Framework
             return x;
         }
 
+        /// <summary>
+        /// Check if any of the values in a Vector3 are NaN or Infinity
+        /// </summary>
+        /// <param name="v">Vector3 to check</param>
+        /// <returns></returns>
+        public static bool IsNanOrInfinity(Vector3 v)
+        {
+            if (float.IsNaN(v.X) || float.IsNaN(v.Y) || float.IsNaN(v.Z))
+                return true;
+
+            if (float.IsInfinity(v.X) || float.IsInfinity(v.Y) || float.IsNaN(v.Z))
+                return true;
+
+            return false;
+        }
+
         // Inclusive, within range test (true if equal to the endpoints)
         public static bool InRange<T>(T x, T min, T max)
             where T : IComparable<T>
@@ -507,6 +523,19 @@ namespace OpenSim.Framework
             }
 
             return sb.ToString();
+        }
+
+        public static byte[] DocToBytes(XmlDocument doc)
+        {
+            using (MemoryStream ms = new MemoryStream())
+            using (XmlTextWriter xw = new XmlTextWriter(ms, null))
+            {
+                xw.Formatting = Formatting.Indented;
+                doc.WriteTo(xw);
+                xw.Flush();
+
+                return ms.ToArray();
+            }
         }
 
         /// <summary>
@@ -683,12 +712,13 @@ namespace OpenSim.Framework
         public static bool IsOutsideView(float drawdist, uint oldx, uint newx, uint oldy, uint newy)
         {
             int dd = (int)((drawdist + Constants.RegionSize - 1) / Constants.RegionSize);
+            int ddne = (int)((drawdist + Constants.RegionSize - 1) / Constants.RegionSize) + (int)Constants.RegionSize;
 
             int startX = (int)oldx - dd;
             int startY = (int)oldy - dd;
 
-            int endX = (int)oldx + dd;
-            int endY = (int)oldy + dd;
+            int endX = (int)oldx + ddne;
+            int endY = (int)oldy + ddne;
 
             return (newx < startX || endX < newx || newy < startY || endY < newy);
         }
@@ -1252,101 +1282,6 @@ namespace OpenSim.Framework
             }
         }
 
-        public static void SerializeToFile(string filename, Object obj)
-        {
-            IFormatter formatter = new BinaryFormatter();
-            Stream stream = null;
-
-            try
-            {
-                stream = new FileStream(
-                    filename, FileMode.Create,
-                    FileAccess.Write, FileShare.None);
-
-                formatter.Serialize(stream, obj);
-            }
-            catch (Exception e)
-            {
-                m_log.Error(e.ToString());
-            }
-            finally
-            {
-                if (stream != null)
-                {
-                    stream.Close();
-                }
-            }
-        }
-
-        public static Object DeserializeFromFile(string filename)
-        {
-            IFormatter formatter = new BinaryFormatter();
-            Stream stream = null;
-            Object ret = null;
-
-            try
-            {
-                stream = new FileStream(
-                    filename, FileMode.Open,
-                    FileAccess.Read, FileShare.None);
-
-                ret = formatter.Deserialize(stream);
-            }
-            catch (Exception e)
-            {
-                m_log.Error(e.ToString());
-            }
-            finally
-            {
-                if (stream != null)
-                {
-                    stream.Close();
-                }
-            }
-
-            return ret;
-        }
-
-        public static string Compress(string text)
-        {
-            byte[] buffer = Util.UTF8.GetBytes(text);
-            MemoryStream memory = new MemoryStream();
-            using (GZipStream compressor = new GZipStream(memory, CompressionMode.Compress, true))
-            {
-                compressor.Write(buffer, 0, buffer.Length);
-            }
-
-            memory.Position = 0;
-           
-            byte[] compressed = new byte[memory.Length];
-            memory.Read(compressed, 0, compressed.Length);
-
-            byte[] compressedBuffer = new byte[compressed.Length + 4];
-            Buffer.BlockCopy(compressed, 0, compressedBuffer, 4, compressed.Length);
-            Buffer.BlockCopy(BitConverter.GetBytes(buffer.Length), 0, compressedBuffer, 0, 4);
-            return Convert.ToBase64String(compressedBuffer);
-        }
-
-        public static string Decompress(string compressedText)
-        {
-            byte[] compressedBuffer = Convert.FromBase64String(compressedText);
-            using (MemoryStream memory = new MemoryStream())
-            {
-                int msgLength = BitConverter.ToInt32(compressedBuffer, 0);
-                memory.Write(compressedBuffer, 4, compressedBuffer.Length - 4);
-
-                byte[] buffer = new byte[msgLength];
-
-                memory.Position = 0;
-                using (GZipStream decompressor = new GZipStream(memory, CompressionMode.Decompress))
-                {
-                    decompressor.Read(buffer, 0, buffer.Length);
-                }
-
-                return Util.UTF8.GetString(buffer);
-            }
-        }
-
         /// <summary>
         /// Copy data from one stream to another, leaving the read position of both streams at the beginning.
         /// </summary>
@@ -1473,33 +1408,6 @@ namespace OpenSim.Framework
             y += ry;
         }
         
-        /// <summary>
-        /// Get operating system information if available.  Returns only the first 45 characters of information
-        /// </summary>
-        /// <returns>
-        /// Operating system information.  Returns an empty string if none was available.
-        /// </returns>
-        public static string GetOperatingSystemInformation()
-        {
-            string os = String.Empty;
-
-            if (Environment.OSVersion.Platform != PlatformID.Unix)
-            {
-                os = Environment.OSVersion.ToString();
-            }
-            else
-            {
-                os = ReadEtcIssue();
-            }
-                      
-            if (os.Length > 45)
-            {
-                os = os.Substring(0, 45);
-            }
-            
-            return os;
-        }
-
         public static string GetRuntimeInformation()
         {
             string ru = String.Empty;
@@ -1520,16 +1428,6 @@ namespace OpenSim.Framework
             return ru;
         }
 
-        /// <summary>
-        /// Is the given string a UUID?
-        /// </summary>
-        /// <param name="s"></param>
-        /// <returns></returns>
-        public static bool isUUID(string s)
-        {
-            return UUIDPattern.IsMatch(s);
-        }
-
         public static string GetDisplayConnectionString(string connectionString)
         {
             int passPosition = 0;
@@ -1548,18 +1446,6 @@ namespace OpenSim.Framework
             displayConnectionString += connectionString.Substring(passEndPosition, connectionString.Length - passEndPosition);
 
             return displayConnectionString;
-        }
-
-        public static string Base64ToString(string str)
-        {
-            Decoder utf8Decode = Encoding.UTF8.GetDecoder();
-
-            byte[] todecode_byte = Convert.FromBase64String(str);
-            int charCount = utf8Decode.GetCharCount(todecode_byte, 0, todecode_byte.Length);
-            char[] decoded_char = new char[charCount];
-            utf8Decode.GetChars(todecode_byte, 0, todecode_byte.Length, decoded_char, 0);
-            string result = new String(decoded_char);
-            return result;
         }
 
         public static void BinaryToASCII(char[] chars)
@@ -2572,7 +2458,7 @@ namespace OpenSim.Framework
         }
 
         #region Xml Serialization Utilities
-        public static bool ReadBoolean(XmlTextReader reader)
+        public static bool ReadBoolean(XmlReader reader)
         {
             // AuroraSim uses "int" for some fields that are boolean in OpenSim, e.g. "PassCollisions". Don't fail because of this.
             reader.ReadStartElement();
@@ -2583,7 +2469,7 @@ namespace OpenSim.Framework
             return result;
         }
 
-        public static UUID ReadUUID(XmlTextReader reader, string name)
+        public static UUID ReadUUID(XmlReader reader, string name)
         {
             UUID id;
             string idStr;
@@ -2602,7 +2488,7 @@ namespace OpenSim.Framework
             return id;
         }
 
-        public static Vector3 ReadVector(XmlTextReader reader, string name)
+        public static Vector3 ReadVector(XmlReader reader, string name)
         {
             Vector3 vec;
 
@@ -2615,7 +2501,7 @@ namespace OpenSim.Framework
             return vec;
         }
 
-        public static Quaternion ReadQuaternion(XmlTextReader reader, string name)
+        public static Quaternion ReadQuaternion(XmlReader reader, string name)
         {
             Quaternion quat = new Quaternion();
 
@@ -2644,7 +2530,7 @@ namespace OpenSim.Framework
             return quat;
         }
 
-        public static T ReadEnum<T>(XmlTextReader reader, string name)
+        public static T ReadEnum<T>(XmlReader reader, string name)
         {
             string value = reader.ReadElementContentAsString(name, String.Empty);
             // !!!!! to deal with flags without commas

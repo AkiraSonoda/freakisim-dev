@@ -109,6 +109,18 @@ namespace OpenSim.Region.Framework.Scenes
 
             foreach (GridRegion n in neighbours)
             {
+                OpenSim.Framework.RegionFlags? regionFlags = n.RegionFlags;
+
+                // Robust services before 2015-01-14 do not return the regionFlags information.  In this case, we could
+                // make a separate RegionFlags call but this would involve a network call for each neighbour.
+                if (regionFlags != null)
+                {
+                    if ((regionFlags & OpenSim.Framework.RegionFlags.RegionOnline) == 0)
+                    {
+                        continue;
+                    }
+                }
+
                 InformNeighbourThatRegionUpDelegate d = InformNeighboursThatRegionIsUpAsync;
                 d.BeginInvoke(neighbourService, region, n.RegionHandle,
                               InformNeighborsThatRegionisUpCompleted,
@@ -146,6 +158,12 @@ namespace OpenSim.Region.Framework.Scenes
 
         public void SendChildAgentDataUpdate(AgentPosition cAgentData, ScenePresence presence)
         {
+            if (m_log.IsDebugEnabled) {
+                m_log.DebugFormat (
+                    "[SCENE COMMUNICATION SERVICE]: Sending child agent position updates for {0} in {1}", 
+                    presence.Name, m_scene.Name);
+            }
+
             // This assumes that we know what our neighbors are.
             try
             {

@@ -802,7 +802,7 @@ namespace OpenSim.Region.Framework.Scenes
             UUID recipientId, UUID senderId, UUID folderId, UUID recipientParentFolderId)
         {
             //// Retrieve the folder from the sender
-            InventoryFolderBase folder = InventoryService.GetFolder(new InventoryFolderBase(folderId));
+            InventoryFolderBase folder = InventoryService.GetFolder(new InventoryFolderBase(folderId, senderId));
             if (null == folder)
             {
                 m_log.ErrorFormat(
@@ -1222,15 +1222,20 @@ namespace OpenSim.Region.Framework.Scenes
                 agentItem.BasePermissions = taskItem.BasePermissions & (taskItem.NextPermissions | (uint)PermissionMask.Move);
                 if (taskItem.InvType == (int)InventoryType.Object)
                 {
-                    uint perms = taskItem.CurrentPermissions;
+                    // Bake the new base permissions from folded permissions
+                    // The folded perms are in the lowest 3 bits of the current perms
+                    // We use base permissions here to avoid baking the "Locked" status
+                    // into the item as it is passed.
+                    uint perms = taskItem.BasePermissions & taskItem.NextPermissions;
                     PermissionsUtil.ApplyFoldedPermissions(taskItem.CurrentPermissions, ref perms);
+                    // Avoid the "lock trap" - move must always be enabled but the above may remove it
+                    // Add it back here.
                     agentItem.BasePermissions = perms | (uint)PermissionMask.Move;
-                    agentItem.CurrentPermissions = agentItem.BasePermissions;
+                    // Newly given items cannot be "locked" on rez. Make sure by
+                    // setting current equal to base.
                 }
-                else
-                {
-                    agentItem.CurrentPermissions = agentItem.BasePermissions & taskItem.CurrentPermissions;
-                }
+
+                agentItem.CurrentPermissions = agentItem.BasePermissions;
 
                 agentItem.Flags |= (uint)InventoryItemFlags.ObjectSlamPerm;
                 agentItem.NextPermissions = taskItem.NextPermissions;
@@ -1969,7 +1974,7 @@ namespace OpenSim.Region.Framework.Scenes
                     return;
             }
 
-            if (destPart.ScriptAccessPin != pin)
+            if (destPart.ScriptAccessPin == 0 || destPart.ScriptAccessPin != pin)
             {
                 m_log.WarnFormat(
                         "[PRIM INVENTORY]: " +
@@ -2019,6 +2024,7 @@ namespace OpenSim.Region.Framework.Scenes
             destTaskItem.Name = srcTaskItem.Name;
             destTaskItem.InvType = srcTaskItem.InvType;
             destTaskItem.Type = srcTaskItem.Type;
+            destTaskItem.ScriptRunning = running != 0;
 
             destPart.Inventory.AddInventoryItemExclusive(destTaskItem, false);
 
@@ -2202,7 +2208,8 @@ namespace OpenSim.Region.Framework.Scenes
             veclist = new List<Vector3>();
 
             XmlDocument doc = new XmlDocument();
-            string xmlData = Utils.BytesToString(assetData);
+            /* this one is for OpenSim brain-deadness */
+            string xmlData = Utils.BytesToString(assetData).Replace("<SceneObjectPart xmlns:xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">", "<SceneObjectPart xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">");
             doc.LoadXml(xmlData);
             XmlElement e = (XmlElement)doc.SelectSingleNode("/CoalescedObject");
 
