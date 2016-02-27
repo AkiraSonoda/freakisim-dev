@@ -1,0 +1,39 @@
+#!/bin/bash
+# Provides:         freaki_package        
+# Description:      packages the source repository with some external modules into a tar.gz
+#                   archive and copeis it to the web server
+# Author:           Akira Sonoda <akira.sonoda.1@gmail.com>
+# Version:          1.6
+#
+VERSION=$1
+SRCDIR=/home/opensim/src
+
+cd $SRCDIR
+
+# copying the correct tag into an extra directory
+cp -R $SRCDIR/freakisim-dev  $SRCDIR/$VERSION
+
+# remove the .git folder
+cd $SRCDIR/$VERSION
+rm -R -f .git
+cd $SRCDIR
+
+# Copy libs
+cp $SRCDIR/arribasim-libs/bin/C5.dll $SRCDIR/$VERSION/bin
+cp $SRCDIR/arribasim-libs/bin/CookComputing.XmlRpcV2.dll $SRCDIR/$VERSION/bin
+cp $SRCDIR/arribasim-libs/bin/HttpServer.dll $SRCDIR/$VERSION/bin
+cp $SRCDIR/arribasim-libs/bin/Nwc.XmlRpc.dll $SRCDIR/$VERSION/bin
+cp $SRCDIR/arribasim-libs/bin/PrimMesher.dll $SRCDIR/$VERSION/bin
+cp $SRCDIR/arribasim-libs/bin/SmartThreadPool.dll $SRCDIR/$VERSION/bin
+cp $SRCDIR/arribasim-libs/bin/ThreadedClasses.dll $SRCDIR/$VERSION/bin
+cp $SRCDIR/arribasim-libs/bin/Warp3D.dll $SRCDIR/$VERSION/bin
+
+# Copy module source
+cp -R $SRCDIR/arribasim-dev/addon-modules/OpenSimProfile $SRCDIR/$VERSION/addon-modules
+cp -R $SRCDIR/arribasim-dev/addon-modules/OpenSimSearch $SRCDIR/$VERSION/addon-modules
+cp -R $SRCDIR/arribasim-dev/addon-modules/OpenSim.Currency $SRCDIR/$VERSION/addon-modules
+
+tar cfz $VERSION.tar.gz $VERSION
+cp $VERSION.tar.gz /srv/www/vhosts/suai.dyndns.org
+
+echo package prepared and uploaded

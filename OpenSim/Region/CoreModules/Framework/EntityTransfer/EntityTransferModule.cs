@@ -2387,8 +2387,12 @@ namespace OpenSim.Region.CoreModules.Framework.EntityTransfer
                 neighbours.RemoveAll(
                     r =>
                         r.RegionID == m_regionInfo.RegionID
+<<<<<<< HEAD
                             || (r.RegionFlags != null && (r.RegionFlags & OpenSim.Framework.RegionFlags.RegionOnline) == 0) ||
                             r.RegionLocX < startX || r.RegionLocY < startY || r.RegionLocX > endX || r.RegionLocY > endY);
+=======
+                            || (r.RegionFlags != null && (r.RegionFlags & OpenSim.Framework.RegionFlags.RegionOnline) == 0));
+>>>>>>> 93266bd592ab705f5a5dec77b9c58a8ebed83c6e
                 return neighbours;
             }
             else
