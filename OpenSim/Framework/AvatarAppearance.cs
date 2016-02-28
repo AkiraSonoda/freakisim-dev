@@ -451,8 +451,15 @@ namespace OpenSim.Framework
         {
             if(m_log.IsDebugEnabled) m_log.DebugFormat("set wearable {0}",wearableId);
             m_wearables[wearableId].Clear();
-            for (int i = 0; i < wearable.Count; i++)
+            int count = wearable.Count;
+            if (count > AvatarWearable.MAX_WEARABLES)
+            {
+                count = AvatarWearable.MAX_WEARABLES;
+            }
+            for (int i = 0; i < count; i++)
+            {
                 m_wearables[wearableId].Add(wearable[i].ItemID, wearable[i].AssetID);
+            }
         }
 
         public override String ToString()
