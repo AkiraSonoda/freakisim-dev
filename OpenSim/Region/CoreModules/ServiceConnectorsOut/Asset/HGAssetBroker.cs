@@ -389,7 +389,7 @@ namespace OpenSim.Region.CoreModules.ServiceConnectorsOut.Asset
 
                             OSDMap surabayaAnswer = WebUtil.PostToServiceCompressed(surabayaServerURI+"/cachetexture", serializedAssetCaps, 3000);
                             if(surabayaAnswer != null) {
-                                m_log.InfoFormat("Caching baked Texture: {0}",surabayaAnswer.ToString());
+                                // m_log.InfoFormat("Caching baked Texture: {0}",surabayaAnswer.ToString());
                                 OSDBoolean isSuccess = (OSDBoolean) surabayaAnswer["Success"];
                                 if (isSuccess) {
                                     OSDMap answer = (OSDMap) surabayaAnswer["_Result"];

@@ -1226,7 +1226,6 @@ namespace OpenSim.Region.ClientStack.LindenUDP
                 int pcnt;
                 
                 for (pcnt = 0; pcnt < px.Length; ++pcnt)
-<<<<<<< HEAD
                 {
                     uint lastSerialNo = 0;
                     uint newSerialNo = 0;
@@ -1281,62 +1280,6 @@ namespace OpenSim.Region.ClientStack.LindenUDP
                         packFrame.Add(patches[pstart++]);
                     }
 
-=======
-                {
-                    uint lastSerialNo = 0;
-                    uint newSerialNo = 0;
-                    int bitLength = 0;
-                    int patchID = (px[pcnt] << 16) | (py[pcnt]);
-
-                    lock(m_TransmittedTerrainSerials)
-                    {
-                        if(!m_TransmittedTerrainSerials.TryGetValue(patchID, out lastSerialNo))
-                        {
-                            lastSerialNo = 0;
-                        }
-
-                        byte[] pdata = terrData.GetCompressedPatch(px[pcnt], py[pcnt], out bitLength, lastSerialNo, out newSerialNo);
-                        if(null != pdata)
-                        {
-                            m_TransmittedTerrainSerials[patchID] = newSerialNo;
-                            OpenSimTerrainCompressor.PatchInfo pi = new OpenSimTerrainCompressor.PatchInfo();
-                            pi.X = px[pcnt];
-                            pi.Y = py[pcnt];
-                            pi.BitLength = bitLength;
-                            pi.PackedData = pdata;
-                            patches.Add(pi);
-                        }
-                    }
-
-                }
-
-                /* the largest possible patch holds 647 bytes => 20 bits * 256 + 7 byte header, so a dynamic approach is a lot better */
-
-                List<OpenSimTerrainCompressor.PatchInfo> packFrame = new List<OpenSimTerrainCompressor.PatchInfo>();
-
-                byte landPacketType = (byte)TerrainPatch.LayerType.Land;
-                if (terrData.SizeX > Constants.RegionSize || terrData.SizeY > Constants.RegionSize)
-                {
-                    landPacketType = (byte)TerrainPatch.LayerType.LandExtended;
-                }
-
-                pcnt = 0;
-                while(pcnt < patches.Count)
-                {
-                    int pstart = pcnt;
-                    int remainingbits = 1302 * 8;
-                    while(pcnt < patches.Count && remainingbits >= patches[pcnt].BitLength)
-                    {
-                        remainingbits -= patches[pcnt].BitLength;
-                        ++pcnt;
-                    }
-                    packFrame.Clear();
-                    while(pstart < pcnt)
-                    {
-                        packFrame.Add(patches[pstart++]);
-                    }
-
->>>>>>> 93266bd592ab705f5a5dec77b9c58a8ebed83c6e
                     SendTheLayerPacket(OpenSimTerrainCompressor.CreateLandPacket(packFrame, landPacketType));
                 }
             }
@@ -4407,7 +4350,7 @@ namespace OpenSim.Region.ClientStack.LindenUDP
         {
             uint priority = 0;  // time based ordering only
             lock (m_entityProps.SyncRoot)
-                m_entityProps.Enqueue(priority, new ObjectPropertyUpdate(entity,requestFlags,true,true));
+                m_entityProps.Enqueue(priority, new ObjectPropertyUpdate(entity,requestFlags,true,false));
         }
 
         private void ResendPropertyUpdate(ObjectPropertyUpdate update)
@@ -8874,9 +8817,6 @@ namespace OpenSim.Region.ClientStack.LindenUDP
 
         private bool HandleMapBlockRequest(IClientAPI sender, Packet Pack)
         {
-            if (m_log.IsDebugEnabled) {
-                m_log.DebugFormat ("{0} ", System.Reflection.MethodBase.GetCurrentMethod ().Name);
-            }
             MapBlockRequestPacket MapRequest = (MapBlockRequestPacket)Pack;
 
             #region Packet Session and User Check

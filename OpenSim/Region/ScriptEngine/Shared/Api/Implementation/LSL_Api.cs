@@ -7480,15 +7480,9 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
             {
                 dimple.y = 1f;
             }
-<<<<<<< HEAD
-            if (dimple.y - dimple.x < 0.02f)
-            {
-                dimple.x = dimple.y - 0.02f;
-=======
             if (dimple.y - cut.x < 0.02f)
             {
                 dimple.x = cut.y - 0.02f;
->>>>>>> 93266bd592ab705f5a5dec77b9c58a8ebed83c6e
                 if (dimple.x < 0.0f)
                 {
                     dimple.x = 0.0f;
@@ -8904,21 +8898,12 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                         case ScriptBaseClass.PRIM_PHANTOM:
                             if (remain < 1)
                                 return null;
-<<<<<<< HEAD
 
                             string ph = rules.Data[idx++].ToString();
                             part.ParentGroup.ScriptSetPhantomStatus(ph.Equals("1"));
 
                             break;
 
-=======
-
-                            string ph = rules.Data[idx++].ToString();
-                            part.ParentGroup.ScriptSetPhantomStatus(ph.Equals("1"));
-
-                            break;
-
->>>>>>> 93266bd592ab705f5a5dec77b9c58a8ebed83c6e
                         case ScriptBaseClass.PRIM_PHYSICS:
                            if (remain < 1)
                                 return null;
@@ -10137,6 +10122,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
         public LSL_List llGetLinkMedia(LSL_Integer link, LSL_Integer face, LSL_List rules)
         {
             m_host.AddScriptLPS(1);
+            ScriptSleep(1000);
             if (link == ScriptBaseClass.LINK_ROOT)
                 return GetPrimMediaParams(m_host.ParentGroup.RootPart, face, rules);
             else if (link == ScriptBaseClass.LINK_THIS)
@@ -10263,6 +10249,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
         public LSL_Integer llSetLinkMedia(LSL_Integer link, LSL_Integer face, LSL_List rules)
         {
             m_host.AddScriptLPS(1);
+            ScriptSleep(1000);
             if (link == ScriptBaseClass.LINK_ROOT)
                 return SetPrimMediaParams(m_host.ParentGroup.RootPart, face, rules);
             else if (link == ScriptBaseClass.LINK_THIS)
@@ -10388,6 +10375,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
         public LSL_Integer llClearLinkMedia(LSL_Integer link, LSL_Integer face)
         {
             m_host.AddScriptLPS(1);
+            ScriptSleep(1000);
             if (link == ScriptBaseClass.LINK_ROOT)
                 return ClearPrimMedia(m_host.ParentGroup.RootPart, face);
             else if (link == ScriptBaseClass.LINK_THIS)

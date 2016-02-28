@@ -2373,12 +2373,11 @@ namespace OpenSim.Region.CoreModules.Framework.EntityTransfer
                 uint dd = Math.Max((uint)avatar.Scene.DefaultDrawDistance, 
                                 Math.Max(Scene.RegionInfo.RegionSizeX, Scene.RegionInfo.RegionSizeY));
 
-                /* we have to decrease by one RegionSize to actually see something on west and south direction */
-                uint startX = Util.RegionToWorldLoc(pRegionLocX) - dd - Constants.RegionSize / 2;
-                uint startY = Util.RegionToWorldLoc(pRegionLocY) - dd - Constants.RegionSize / 2;
+                uint startX = Util.RegionToWorldLoc(pRegionLocX) - dd + Constants.RegionSize/2;
+                uint startY = Util.RegionToWorldLoc(pRegionLocY) - dd + Constants.RegionSize/2;
 
-                uint endX = Util.RegionToWorldLoc(pRegionLocX) + dd + Constants.RegionSize / 2;
-                uint endY = Util.RegionToWorldLoc(pRegionLocY) + dd + Constants.RegionSize / 2;
+                uint endX = Util.RegionToWorldLoc(pRegionLocX) + dd + Constants.RegionSize/2;
+                uint endY = Util.RegionToWorldLoc(pRegionLocY) + dd + Constants.RegionSize/2;
 
                 List<GridRegion> neighbours =
                     avatar.Scene.GridService.GetRegionRange(m_regionInfo.ScopeID, (int)startX, (int)endX, (int)startY, (int)endY);
@@ -2387,12 +2386,7 @@ namespace OpenSim.Region.CoreModules.Framework.EntityTransfer
                 neighbours.RemoveAll(
                     r =>
                         r.RegionID == m_regionInfo.RegionID
-<<<<<<< HEAD
-                            || (r.RegionFlags != null && (r.RegionFlags & OpenSim.Framework.RegionFlags.RegionOnline) == 0) ||
-                            r.RegionLocX < startX || r.RegionLocY < startY || r.RegionLocX > endX || r.RegionLocY > endY);
-=======
                             || (r.RegionFlags != null && (r.RegionFlags & OpenSim.Framework.RegionFlags.RegionOnline) == 0));
->>>>>>> 93266bd592ab705f5a5dec77b9c58a8ebed83c6e
                 return neighbours;
             }
             else

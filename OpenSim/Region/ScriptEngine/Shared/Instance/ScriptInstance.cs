@@ -873,7 +873,6 @@ namespace OpenSim.Region.ScriptEngine.Shared.Instance
                                     // DISPLAY ERROR INWORLD
                                     string text = FormatException(e);
 
-                                    text = "At region id " + m_RegionID + ":\n" + text;
                                     if (text.Length > 1000)
                                         text = text.Substring(0, 1000);
                                     Engine.World.SimChat(Utils.StringToBytes(text),

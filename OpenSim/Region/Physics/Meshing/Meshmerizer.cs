@@ -402,9 +402,13 @@ namespace OpenSim.Region.Physics.Meshing
                             int convexOffset = convexBlock["offset"].AsInteger() + (int)start;
                             int convexSize = convexBlock["size"].AsInteger();
 
+                            byte[] convexBytes = new byte[convexSize];
+                            
+                            System.Buffer.BlockCopy(primShape.SculptData, convexOffset, convexBytes, 0, convexSize);
+                            
                             try
                             {
-                                convexBlockOsd = DecompressOsd(new MemoryStream(primShape.SculptData, convexOffset, convexSize));
+                                convexBlockOsd = DecompressOsd(convexBytes);
                             }
                             catch (Exception e)
                             {
@@ -513,9 +517,12 @@ namespace OpenSim.Region.Physics.Meshing
                     return false; // no mesh data in asset
 
                 OSD decodedMeshOsd = new OSD();
+                byte[] meshBytes = new byte[physSize];
+                System.Buffer.BlockCopy(primShape.SculptData, physOffset, meshBytes, 0, physSize);
+                //                        byte[] decompressed = new byte[physSize * 5];
                 try
                 {
-                    decodedMeshOsd = DecompressOsd(new MemoryStream(primShape.SculptData, physOffset, physSize));
+                    decodedMeshOsd = DecompressOsd(meshBytes);
                 }
                 catch (Exception e)
                 {
@@ -551,18 +558,18 @@ namespace OpenSim.Region.Physics.Meshing
         /// <param name="decodedOsd"></param> the OSD object
         /// <param name="meshBytes"></param>
         /// <returns></returns>
-        private static OSD DecompressOsd(Stream input)
+        private static OSD DecompressOsd(byte[] meshBytes)
         {
             OSD decodedOsd = null;
 
-            using (input)
+            using (MemoryStream inMs = new MemoryStream(meshBytes))
             {
                 using (MemoryStream outMs = new MemoryStream())
                 {
-                    byte[] readBuffer = new byte[2048];
-                    input.Read(readBuffer, 0, 2); // skip first 2 bytes in header
-                    using (DeflateStream decompressionStream = new DeflateStream(input, CompressionMode.Decompress))
+                    using (DeflateStream decompressionStream = new DeflateStream(inMs, CompressionMode.Decompress))
                     {
+                        byte[] readBuffer = new byte[2048];
+                        inMs.Read(readBuffer, 0, 2); // skip first 2 bytes in header
                         int readLen = 0;
 
                         while ((readLen = decompressionStream.Read(readBuffer, 0, readBuffer.Length)) > 0)
@@ -575,8 +582,8 @@ namespace OpenSim.Region.Physics.Meshing
                         byte[] decompressedBuf = outMs.GetBuffer();
 
                         decodedOsd = OSDParser.DeserializeLLSDBinary(decompressedBuf);
+                    }
                 }
-            }
             }
             return decodedOsd;
         }

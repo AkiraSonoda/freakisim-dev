@@ -111,8 +111,7 @@ namespace OpenSim.Services.InventoryService
 
             if (rootFolder == null)
             {
-                /* hard-code 8 here, so no update will ever fail us if such an update should happen */
-                rootFolder = ConvertToOpenSim(CreateFolder(principalID, UUID.Zero, (int)8 /* AssetType.RootFolder */, "My Inventory"));
+                rootFolder = ConvertToOpenSim(CreateFolder(principalID, UUID.Zero, (int)AssetType.RootFolder, "My Inventory"));
                 result = true;
             }
 
