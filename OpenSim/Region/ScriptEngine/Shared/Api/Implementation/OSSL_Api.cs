@@ -2105,7 +2105,13 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                 new string[] { "Startup", "Hypergrid" }, String.Empty);
 
             if (!string.IsNullOrEmpty(HomeURI))
+            {
+                if(!HomeURI.EndsWith("/"))
+                {
+                    HomeURI += "/";
+                }
                 return HomeURI;
+            }
 
             // Legacy. Remove soon!
             if (config.Configs["LoginService"] != null)
@@ -2114,6 +2120,10 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
             if (String.IsNullOrEmpty(HomeURI))
                 HomeURI = GridUserInfo(InfoType.Home);
 
+            if(!string.IsNullOrEmpty(HomeURI) && !HomeURI.EndsWith("/"))
+            {
+                HomeURI += "/";
+            }
             return HomeURI;
         }
 
@@ -2126,11 +2136,23 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                 new string[] { "Startup", "Hypergrid" }, String.Empty);
 
             if (!string.IsNullOrEmpty(gatekeeperURI))
+            {
+                if(!gatekeeperURI.EndsWith("/"))
+                {
+                    gatekeeperURI += "/";
+                }
                 return gatekeeperURI;
+            }
 
             // Legacy. Remove soon!
             if (config.Configs["GridService"] != null)
+            {
                 gatekeeperURI = config.Configs["GridService"].GetString("Gatekeeper", gatekeeperURI);
+                if(!string.IsNullOrEmpty(gatekeeperURI) && !gatekeeperURI.EndsWith("/"))
+                {
+                    gatekeeperURI += "/";
+                }
+            }
 
             return gatekeeperURI;
         }
@@ -2150,6 +2172,50 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                 retval = GridUserInfo(InfoType.Custom, key);
 
             return retval;
+        }
+
+
+        public string osGetAvatarHomeURI(string uuid)
+        {
+            CheckThreatLevel(ThreatLevel.Low, "osGetAvatarHomeURI");
+            m_host.AddScriptLPS(1);
+
+            IUserManagement userManager = m_ScriptEngine.World.RequestModuleInterface<IUserManagement>();
+            string returnValue = string.Empty;
+
+            if (userManager != null)
+            {
+                returnValue = userManager.GetUserServerURL(new UUID(uuid), "HomeURI");
+            }
+
+            if (string.IsNullOrEmpty(returnValue))
+            {
+                IConfigSource config = m_ScriptEngine.ConfigSource;
+                returnValue = Util.GetConfigVarFromSections<string>(config, "HomeURI",
+                    new string[] { "Startup", "Hypergrid" }, String.Empty);
+
+                if (!string.IsNullOrEmpty(returnValue))
+                {
+                    if(!returnValue.EndsWith("/"))
+                    {
+                        returnValue += "/";
+                    }
+                    return returnValue;
+                }
+
+                // Legacy. Remove soon!
+                if (config.Configs["LoginService"] != null)
+                {
+                    returnValue = config.Configs["LoginService"].GetString("SRV_HomeURI", returnValue);
+                }
+
+                if (string.IsNullOrEmpty(returnValue))
+                {
+                    returnValue = GridUserInfo(InfoType.Home);
+                }
+            }
+
+            return returnValue;
         }
 
         public LSL_String osFormatString(string str, LSL_List strings)
