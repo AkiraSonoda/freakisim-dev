@@ -7480,9 +7480,9 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
             {
                 dimple.y = 1f;
             }
-            if (dimple.y - cut.x < 0.02f)
+            if (dimple.y - dimple.x < 0.02f)
             {
-                dimple.x = cut.y - 0.02f;
+                dimple.x = dimple.y - 0.02f;
                 if (dimple.x < 0.0f)
                 {
                     dimple.x = 0.0f;
@@ -7653,7 +7653,8 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
             if (type != (ScriptBaseClass.PRIM_SCULPT_TYPE_CYLINDER | flag) &&
                 type != (ScriptBaseClass.PRIM_SCULPT_TYPE_PLANE | flag) &&
                 type != (ScriptBaseClass.PRIM_SCULPT_TYPE_SPHERE | flag) &&
-                type != (ScriptBaseClass.PRIM_SCULPT_TYPE_TORUS | flag))
+                type != (ScriptBaseClass.PRIM_SCULPT_TYPE_TORUS | flag) &&
+                type != (ScriptBaseClass.PRIM_SCULPT_TYPE_MESH | flag))
             {
                 // default
                 type = (int)ScriptBaseClass.PRIM_SCULPT_TYPE_SPHERE;
@@ -10122,7 +10123,6 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
         public LSL_List llGetLinkMedia(LSL_Integer link, LSL_Integer face, LSL_List rules)
         {
             m_host.AddScriptLPS(1);
-            ScriptSleep(1000);
             if (link == ScriptBaseClass.LINK_ROOT)
                 return GetPrimMediaParams(m_host.ParentGroup.RootPart, face, rules);
             else if (link == ScriptBaseClass.LINK_THIS)
@@ -10249,7 +10249,6 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
         public LSL_Integer llSetLinkMedia(LSL_Integer link, LSL_Integer face, LSL_List rules)
         {
             m_host.AddScriptLPS(1);
-            ScriptSleep(1000);
             if (link == ScriptBaseClass.LINK_ROOT)
                 return SetPrimMediaParams(m_host.ParentGroup.RootPart, face, rules);
             else if (link == ScriptBaseClass.LINK_THIS)
@@ -10375,7 +10374,6 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
         public LSL_Integer llClearLinkMedia(LSL_Integer link, LSL_Integer face)
         {
             m_host.AddScriptLPS(1);
-            ScriptSleep(1000);
             if (link == ScriptBaseClass.LINK_ROOT)
                 return ClearPrimMedia(m_host.ParentGroup.RootPart, face);
             else if (link == ScriptBaseClass.LINK_THIS)

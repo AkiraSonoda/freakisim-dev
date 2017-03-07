@@ -73,6 +73,7 @@
     DefaultAssetLoader = "OpenSim.Framework.AssetLoader.Filesystem.dll"
     AssetLoaderArgs = "assets/AssetSets.xml"
 
+
 [GridService]
     ;; For in-memory region storage (default)
     StorageProvider = "OpenSim.Data.Null.dll:NullRegionData"
@@ -83,7 +84,7 @@
     ; MapTileDirectory = "./maptiles"
 
     ;; Next, we can specify properties of regions, including default and fallback regions
-    ;; The syntax is: Region_<RegionName> = "<flags>"
+    ;; The syntax is: Region_<RegioName> = "<flags>"
     ;; where <flags> can be DefaultRegion, FallbackRegion, NoDirectLogin, Persistent, LockedOut
     ;;  
     ;; DefaultRegion    If a local login cannot be placed in the required region (e.g. home region does not exist, avatar is not allowed entry, etc.)
