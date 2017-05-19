@@ -27,9 +27,9 @@
 
 using System;
 using System.Collections.Generic;
+//using System.Linq;
 using System.Text;
 using OpenSim.Data.MySQL.MySQLMoneyDataWrapper;
-using OpenSim.Modules.Currency;
 using log4net;
 using System.Reflection;
 using OpenMetaverse;
@@ -41,13 +41,11 @@ namespace OpenSim.Grid.MoneyServer
     {
         private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
         private string m_connect;
-		//private MySQLMoneyManager m_moneyManager;
-		private long TicksToEpoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).Ticks;
+        private MySQLMoneyManager m_moneyManager;
 
         // DB manager pool
-        protected Dictionary<int, MySQLSuperManager> m_dbconnections = new Dictionary<int, MySQLSuperManager>();	// Lock付
+        protected Dictionary<int, MySQLSuperManager> m_dbconnections = new Dictionary<int, MySQLSuperManager>();
         private int m_maxConnections;
-
         public int m_lastConnect = 0;
 
 
@@ -63,33 +61,25 @@ namespace OpenSim.Grid.MoneyServer
         }
 
 
-        public void Initialise(string connectionString, int maxDBConnections)
+        public void Initialise(string connectionString,int maxDBConnections)
         {
-            m_connect = connectionString;
             m_maxConnections = maxDBConnections;
-            if (connectionString != string.Empty) {
-                //m_moneyManager = new MySQLMoneyManager(connectionString);
-
+            if (connectionString != string.Empty)
+            {
+                m_moneyManager = new MySQLMoneyManager(connectionString);
                 //m_log.Info("Creating " + m_maxConnections + " DB connections...");
-                for (int i=0; i<m_maxConnections; i++) {
+                for (int i = 0; i < m_maxConnections; i++)
+                {
                     //m_log.Info("Connecting to DB... [" + i + "]");
                     MySQLSuperManager msm = new MySQLSuperManager();
                     msm.Manager = new MySQLMoneyManager(connectionString);
                     m_dbconnections.Add(i, msm);
                 }
             }
-            else {
-                m_log.Error("[MONEY DB]: Connection string is null, initialise database failed");
+            else 
+            {
+                m_log.Error("[MONEY DB]: Connection string is null,initialise database failed");
                 throw new Exception("Failed to initialise MySql database");
-            }
-        }
-
-
-        public void Reconnect()
-        {
-            for (int i=0; i<m_maxConnections; i++) {
-            	MySQLSuperManager msm = m_dbconnections[i];
-                msm.Manager.Reconnect();
             }
         }
 
@@ -97,23 +87,28 @@ namespace OpenSim.Grid.MoneyServer
         private MySQLSuperManager GetLockedConnection()
         {
             int lockedCons = 0;
-            while (true) {
+            while (true)
+            {
                 m_lastConnect++;
 
                 // Overflow protection
-                if (m_lastConnect==int.MaxValue) m_lastConnect = 0;
+                if (m_lastConnect == int.MaxValue)
+                    m_lastConnect = 0;
 
-                MySQLSuperManager msm = m_dbconnections[m_lastConnect%m_maxConnections];
-                if (!msm.Locked) {
-                    msm.GetLock();
-                    return msm;
+                MySQLSuperManager x = m_dbconnections[m_lastConnect % m_maxConnections];
+                if (!x.Locked)
+                {
+                    x.GetLock();
+                    return x;
                 }
 
                 lockedCons++;
-                if (lockedCons>m_maxConnections) {
+                if (lockedCons > m_maxConnections)
+                {
                     lockedCons = 0;
                     System.Threading.Thread.Sleep(1000); // Wait some time before searching them again.
-                    m_log.Debug("WARNING: All threads are in use. Probable cause: Something didnt release a mutex properly, or high volume of requests inbound.");
+                    m_log.Debug(
+                        "WARNING: All threads are in use. Probable cause: Something didnt release a mutex properly, or high volume of requests inbound.");
                 }
             }
         }
@@ -122,19 +117,18 @@ namespace OpenSim.Grid.MoneyServer
         public int getBalance(string userID)
         {
             MySQLSuperManager dbm = GetLockedConnection();
-
-            try {
+            try
+            {
                 return dbm.Manager.getBalance(userID);
             }
-			catch (MySql.Data.MySqlClient.MySqlException e) {
+            catch(Exception e)
+            {
                 dbm.Manager.Reconnect();
-                return dbm.Manager.getBalance(userID);
-			}
-            catch(Exception e) {
                 m_log.Error(e.ToString());
                 return 0;
             }
-            finally {
+            finally
+            {
                 dbm.Release();
             }
         }
@@ -143,19 +137,18 @@ namespace OpenSim.Grid.MoneyServer
         public bool withdrawMoney(UUID transactionID, string senderID, int amount)
         {
             MySQLSuperManager dbm = GetLockedConnection();
-
-            try {
+            try
+            {
                 return dbm.Manager.withdrawMoney(transactionID, senderID, amount);
             }
-			catch (MySql.Data.MySqlClient.MySqlException e) {
+            catch (Exception e)
+            {
                 dbm.Manager.Reconnect();
-                return dbm.Manager.withdrawMoney(transactionID, senderID, amount);
-			}
-            catch (Exception e) {
                 m_log.Error(e.ToString());
                 return false;
             }
-            finally {
+            finally
+            {
                 dbm.Release();
             }
         }
@@ -164,44 +157,18 @@ namespace OpenSim.Grid.MoneyServer
         public bool giveMoney(UUID transactionID, string receiverID, int amount)
         {
             MySQLSuperManager dbm = GetLockedConnection();
-
-            try {
+            try
+            {
                 return dbm.Manager.giveMoney(transactionID, receiverID, amount);
             }
-			catch (MySql.Data.MySqlClient.MySqlException e) {
+            catch (Exception e)
+            {
                 dbm.Manager.Reconnect();
-                return dbm.Manager.giveMoney(transactionID, receiverID, amount);
-			}
-            catch (Exception e) {
                 m_log.Error(e.ToString());
                 return false;
             }
-            finally {
-                dbm.Release();
-            }
-        }
-
-
-        public bool setTotalSale(TransactionData transaction)
-        {
-			if (transaction.Receiver==transaction.Sender) return false;
-			if (transaction.Sender==UUID.Zero.ToString()) return false;
-
-            MySQLSuperManager dbm = GetLockedConnection();
-
-			int time = (int)((DateTime.UtcNow.Ticks - TicksToEpoch) / 10000000);
-            try {
-                return dbm.Manager.setTotalSale(transaction.Receiver, transaction.ObjectUUID, transaction.Type, 1, transaction.Amount, time);
-            }
-			catch (MySql.Data.MySqlClient.MySqlException e) {
-                dbm.Manager.Reconnect();
-                return dbm.Manager.setTotalSale(transaction.Receiver, transaction.ObjectUUID, transaction.Type, 1, transaction.Amount, time);
-			}
-            catch (Exception e) {
-                m_log.Error(e.ToString());
-                return false;
-            }
-            finally {
+            finally
+            {
                 dbm.Release();
             }
         }
@@ -210,84 +177,58 @@ namespace OpenSim.Grid.MoneyServer
         public bool addTransaction(TransactionData transaction)
         {
             MySQLSuperManager dbm = GetLockedConnection();
-
-            try {
+            try
+            {
                 return dbm.Manager.addTransaction(transaction);
             }
-			catch (MySql.Data.MySqlClient.MySqlException e) {
+            catch (Exception e)
+            {
                 dbm.Manager.Reconnect();
-                return dbm.Manager.addTransaction(transaction);
-			}
-            catch (Exception e) {
                 m_log.Error(e.ToString());
                 return false;
             }
-            finally {
+            finally
+            {
                 dbm.Release();
             }
         }
 
 
-        public bool addUser(string userID, int balance, int status, int type)
+        public bool addUser(string userID, int balance, int status)
         {
-            TransactionData transaction = new TransactionData();
-            transaction.TransUUID    = UUID.Random();
-            transaction.Sender       = UUID.Zero.ToString();
-            transaction.Receiver     = userID;
-            transaction.Amount       = balance;
-            transaction.ObjectUUID   = UUID.Zero.ToString();
-            transaction.ObjectName   = string.Empty;
-            transaction.RegionHandle = string.Empty;
-            transaction.Type         = (int)TransactionType.BirthGift;
-            transaction.Time         = (int)((DateTime.UtcNow.Ticks - TicksToEpoch) / 10000000);;
-            transaction.Status       = (int)Status.PENDING_STATUS;
-            transaction.SecureCode   = UUID.Random().ToString();
-            transaction.CommonName   = string.Empty;
-            transaction.Description  = "addUser " + DateTime.UtcNow.ToString();
-		
-            bool ret = addTransaction(transaction);
-			if (!ret) return false;
-
-			//
             MySQLSuperManager dbm = GetLockedConnection();
-
-            try {
-                ret = dbm.Manager.addUser(userID, 0, status, type);		// make Balance Table
+            try
+            {
+                return dbm.Manager.addUser(userID, balance, status);
             }
-			catch (MySql.Data.MySqlClient.MySqlException e) {
+            catch (Exception e)
+            {
                 dbm.Manager.Reconnect();
-                ret = dbm.Manager.addUser(userID, 0, status, type);		// make Balance Table
-			}
-            catch (Exception e) {
                 m_log.Error(e.ToString());
                 return false;
             }
-            finally {
+            finally
+            {
                 dbm.Release();
             }
-
-			//
-            if (ret) ret = giveMoney(transaction.TransUUID, userID, balance);
-			return ret;
         }
 
 
         public bool updateTransactionStatus(UUID transactionID, int status, string description)
         {
             MySQLSuperManager dbm = GetLockedConnection();
-
-            try {
+            try
+            {
                 return dbm.Manager.updateTransactionStatus(transactionID, status, description);
             }
-			catch (MySql.Data.MySqlClient.MySqlException e) {
+            catch (Exception e)
+            {
                 dbm.Manager.Reconnect();
-                return dbm.Manager.updateTransactionStatus(transactionID, status, description);
-			}
-            catch (Exception e) {
                 m_log.Error(e.ToString());
                 return false;
             }
-            finally {
+            finally
+            {
                 dbm.Release();
             }
         }
@@ -296,19 +237,18 @@ namespace OpenSim.Grid.MoneyServer
         public bool SetTransExpired(int deadTime)
         {
             MySQLSuperManager dbm = GetLockedConnection();
-
-            try {
+            try
+            {
                 return dbm.Manager.SetTransExpired(deadTime);
             }
-			catch (MySql.Data.MySqlClient.MySqlException e) {
+            catch (Exception e)
+            {
                 dbm.Manager.Reconnect();
-                return dbm.Manager.SetTransExpired(deadTime);
-			}
-            catch (Exception e) {
                 m_log.Error(e.ToString());
                 return false;
             }
-            finally {
+            finally
+            {
                 dbm.Release();
             }
         }
@@ -317,19 +257,18 @@ namespace OpenSim.Grid.MoneyServer
         public bool ValidateTransfer(string secureCode, UUID transactionID)
         {
             MySQLSuperManager dbm = GetLockedConnection();
-
-            try {
+            try
+            {
                 return dbm.Manager.ValidateTransfer(secureCode, transactionID);
             }
-			catch (MySql.Data.MySqlClient.MySqlException e) {
+            catch (Exception e)
+            {
                 dbm.Manager.Reconnect();
-                return dbm.Manager.ValidateTransfer(secureCode, transactionID);
-			}
-            catch (Exception e) {
                 m_log.Error(e.ToString());
                 return false;
             }
-            finally {
+            finally
+            {
                 dbm.Release();
             }
         }
@@ -338,19 +277,18 @@ namespace OpenSim.Grid.MoneyServer
         public TransactionData FetchTransaction(UUID transactionID)
         {
             MySQLSuperManager dbm = GetLockedConnection();
-
-            try {
+            try
+            {
                 return dbm.Manager.FetchTransaction(transactionID);
             }
-			catch (MySql.Data.MySqlClient.MySqlException e) {
+            catch (Exception e)
+            {
                 dbm.Manager.Reconnect();
-                return dbm.Manager.FetchTransaction(transactionID);
-			}
-            catch (Exception e) {
                 m_log.Error(e.ToString());
                 return null;
             }
-            finally {
+            finally
+            {
                 dbm.Release();
             }
         }
@@ -360,90 +298,97 @@ namespace OpenSim.Grid.MoneyServer
         {
             MySQLSuperManager dbm = GetLockedConnection();
             TransactionData[] arrTransaction;
-
-            uint index = 0;
-            if (lastIndex>=0) index = Convert.ToUInt32(lastIndex) + 1;
-
-            try {
-               	arrTransaction = dbm.Manager.FetchTransaction(userID, startTime, endTime, index, 1);
-			}
-			catch (MySql.Data.MySqlClient.MySqlException e) {
-            	dbm.Manager.Reconnect();
-               	arrTransaction = dbm.Manager.FetchTransaction(userID, startTime, endTime, index, 1);
-			}
-            catch (Exception e) {
-              	m_log.Error(e.ToString());
-               	return null;
-           	}
-            finally {
-               	dbm.Release();
+            try
+            {
+                if (lastIndex < 0)
+                {
+                    arrTransaction = dbm.Manager.FetchTransaction(userID, startTime, endTime, 0, 1);
+                    if (arrTransaction.Length > 0)
+                    {
+                        return arrTransaction[0];
+                    }
+                    else
+                        return null;
+                }
+                else
+                {
+                    uint index = Convert.ToUInt32(lastIndex);
+                    arrTransaction = dbm.Manager.FetchTransaction(userID, startTime, endTime, index + 1, 1);
+                    if (arrTransaction.Length > 0)
+                    {
+                        return arrTransaction[0];
+                    }
+                    else
+                        return null;
+                }
             }
-
-			//
-            if (arrTransaction.Length > 0) {
-            	return arrTransaction[0];
-          	}
-          	else {
-            	return null;
-			}
+            catch (Exception e)
+            {
+                dbm.Manager.Reconnect();
+                m_log.Error(e.ToString());
+                return null;
+            }
+            finally
+            {
+                dbm.Release();
+            }
         }
 
 
         public bool DoTransfer(UUID transactionUUID)
         {
-			bool do_trans = false;
-
             TransactionData transaction = new TransactionData();
             transaction = FetchTransaction(transactionUUID);
-
-            if (transaction != null && transaction.Status == (int)Status.PENDING_STATUS) {
+            if (transaction != null && transaction.Status == (int)Status.PENDING_STATUS)
+            {
                 int balance = getBalance(transaction.Sender);
-
                 //check the amount
-                if (transaction.Amount >= 0 && balance >= transaction.Amount) {
-                    if (withdrawMoney(transactionUUID, transaction.Sender, transaction.Amount)) {
+                if (transaction.Amount >= 0 && balance >= transaction.Amount)
+                {
+                    if (withdrawMoney(transactionUUID, transaction.Sender, transaction.Amount))
+                    {
                         //If receiver not found, add it to DB.
-                        if (getBalance(transaction.Receiver) == -1) {
-                            m_log.ErrorFormat("[MONEY DB]: DoTransfer: Receiver not found in balances DB. {0}", transaction.Receiver);
-							return false;
+                        if (getBalance(transaction.Receiver) == -1)
+                        {
+                            addUser(transaction.Receiver, 0, (int)Status.SUCCESS_STATUS);
                         }
-
-                        if (giveMoney(transactionUUID, transaction.Receiver, transaction.Amount)) {
-							do_trans = true;
-						}
-						else {	// give money to receiver failed. 返金処理
+                        if (giveMoney(transactionUUID, transaction.Receiver, transaction.Amount))
+                            return true;
+                        else // give money to receiver failed.
+                        {
                             m_log.ErrorFormat("[MONEY DB]: Give money to receiver {0} failed", transaction.Receiver);
                             //Return money to sender
-                            if (giveMoney(transactionUUID, transaction.Sender, transaction.Amount)) {
-                                m_log.ErrorFormat("[MONEY DB]: give money to receiver {0} failed but return it to sender {1} successfully", 
-														transaction.Receiver, transaction.Sender);
-								updateTransactionStatus(transactionUUID, (int)Status.FAILED_STATUS, "give money to receiver failed but return it to sender successfully");
+                            if (giveMoney(transactionUUID, transaction.Sender, transaction.Amount))
+                            {
+                                m_log.ErrorFormat("[MONEY DB]: give money to receiver {0} failed but return it to sender {1} successfully",
+                                    transaction.Receiver,
+                                    transaction.Sender);
+                                updateTransactionStatus(transactionUUID,
+                                    (int)Status.FAILED_STATUS,
+                                    "give money to receiver failed but return it to sender successfully");
                             }
-                            else {
+                            else
+                            {
                                 m_log.ErrorFormat("[MONEY DB]: FATAL ERROR: Money withdrawn from sender: {0}, but failed to be given to receiver {1}",
-                                    					transaction.Sender, transaction.Receiver);
-                                updateTransactionStatus(transactionUUID, (int)Status.ERROR_STATUS, "give money to receiver failed, and return it to sender unsuccessfully!!!");
+                                    transaction.Sender, transaction.Receiver);
                             }
                         }
                     }
-                    else {	// withdraw money failed
+                    else // withdraw money failed
+                    {
                         m_log.ErrorFormat("[MONEY DB]: Withdraw money from sender {0} failed", transaction.Sender);
                     }
                 }
-                else {	// not enough balance to finish the transaction
+                else // not enough balance to finish the transaction
+                {
                     m_log.ErrorFormat("[MONEY DB]: Not enough balance for user: {0} to apply the transaction.", transaction.Sender);
                 }
             }
-            else {	// Can not fetch the transaction or it has expired
+            else // Can not fetch the transaction or it has expired
+            {
                 m_log.ErrorFormat("[MONEY DB]: The transaction:{0} has expired", transactionUUID.ToString());
             }
-
-			//
-			if (do_trans) {
-				setTotalSale(transaction);
-			}
-
-            return do_trans;
+            return false;
         }
 
 
@@ -453,71 +398,57 @@ namespace OpenSim.Grid.MoneyServer
             TransactionData transaction = new TransactionData();
             transaction = FetchTransaction(transactionUUID);
 			
-            if (transaction!=null && transaction.Status==(int)Status.PENDING_STATUS) {
+            if (transaction != null && transaction.Status == (int)Status.PENDING_STATUS)
+            {
                 //If receiver not found, add it to DB.
-                if (getBalance(transaction.Receiver)==-1) {
-                    m_log.ErrorFormat("[MONEY DB]: DoAddMoney: Receiver not found in balances DB. {0}", transaction.Receiver);
-					return false;
+                if (getBalance(transaction.Receiver)==-1)
+                {
+                    addUser(transaction.Receiver, 0, (int)Status.SUCCESS_STATUS);
                 }
-				//
-                if (giveMoney(transactionUUID, transaction.Receiver, transaction.Amount)) {
-					setTotalSale(transaction);
-					return true;
-				}
-                else {	// give money to receiver failed.
+
+                if (giveMoney(transactionUUID, transaction.Receiver, transaction.Amount)) return true;
+                else // give money to receiver failed.
+                {
                     m_log.ErrorFormat("[MONEY DB]: Add money to receiver {0} failed", transaction.Receiver);
                     updateTransactionStatus(transactionUUID, (int)Status.FAILED_STATUS, "add money to receiver failed");
 				}
             }
-            else {	// Can not fetch the transaction or it has expired
+            else // Can not fetch the transaction or it has expired
+            {
                 m_log.ErrorFormat("[MONEY DB]: The transaction:{0} has expired", transactionUUID.ToString());
             }
-
             return false;
         }
 
 
-		///////////////////////////////////////////////////////////////////////////////////////////////////////
-		//
-		// userinfo
-		//
-		
         public bool TryAddUserInfo(UserInfo user)
         {
             MySQLSuperManager dbm = GetLockedConnection();
-
-			UserInfo userInfo = null;
-
-            try {
-				userInfo = dbm.Manager.fetchUserInfo(user.UserID);
-			}
-			catch (MySql.Data.MySqlClient.MySqlException e) {
-                dbm.Manager.Reconnect();
-				userInfo = dbm.Manager.fetchUserInfo(user.UserID);
-			}
-            catch (Exception e) {
-                m_log.Error(e.ToString());
-                dbm.Release();
-				return false;
-            }
-
-            try {
-				if (userInfo!=null) {
-                    //m_log.InfoFormat("[MONEY DB]: Found user \"{0}\", now update information", user.Avatar);
-                    if (dbm.Manager.updateUserInfo(user)) return true;
+            try
+            {
+                if (dbm.Manager.fetchUserInfo(user.UserID) != null)
+                {
+                    m_log.InfoFormat("[MONEY DB]: Found user \"{0}\", now update information", user.Avatar);
+                    if (m_moneyManager.updateUserInfo(user))
+                        return true;
                 }
-                else if (dbm.Manager.addUserInfo(user)) {
-                    //m_log.InfoFormat("[MONEY DB]: Unable to find user \"{0}\", add it to DB successfully", user.Avatar);
+                else if (dbm.Manager.addUserInfo(user))
+                {
+                    m_log.InfoFormat("[MONEY DB]: Unable to find user \"{0}\", add it to DB successfully", user.Avatar);
                     return true;
                 }
-                m_log.InfoFormat("[MONEY DB]: WARNNING: TryAddUserInfo: Unable to TryAddUserInfo.");
                 return false;
             }
-            catch (Exception e) {
+            catch (Exception e)
+            {
+                dbm.Manager.Reconnect();
+                // Fumi.Iseki
+                m_moneyManager.Reconnect();
                 m_log.Error(e.ToString());
                 return false;
             }
-            finally {
+            finally
+            {
                 dbm.Release();
             }
         }
@@ -525,23 +456,19 @@ namespace OpenSim.Grid.MoneyServer
 
         public UserInfo FetchUserInfo(string userID)
         {
-            UserInfo userInfo = null;
             MySQLSuperManager dbm = GetLockedConnection();
-
-            try {
-                userInfo = dbm.Manager.fetchUserInfo(userID);
-                return userInfo;
+            try
+            {
+                return dbm.Manager.fetchUserInfo(userID);
             }
-			catch (MySql.Data.MySqlClient.MySqlException e) {
+            catch (Exception e)
+            {
                 dbm.Manager.Reconnect();
-                userInfo = dbm.Manager.fetchUserInfo(userID);
-				return userInfo;
-			}
-            catch (Exception e) {
                 m_log.Error(e.ToString());
-				return null;
+                return null;
             }
-            finally {
+            finally
+            {
                 dbm.Release();
             }
         }
@@ -550,19 +477,18 @@ namespace OpenSim.Grid.MoneyServer
         public int getTransactionNum(string userID, int startTime, int endTime)
         {
             MySQLSuperManager dbm = GetLockedConnection();
-
-            try {
+            try
+            {
                 return dbm.Manager.getTransactionNum(userID,startTime,endTime);
             }
-			catch (MySql.Data.MySqlClient.MySqlException e) {
+            catch (Exception e)
+            {
                 dbm.Manager.Reconnect();
-                return dbm.Manager.getTransactionNum(userID,startTime,endTime);
-			}
-            catch (Exception e) {
                 m_log.Error(e.ToString());
                 return -1;
             }
-            finally {
+            finally
+            {
                 dbm.Release();
             }
         }

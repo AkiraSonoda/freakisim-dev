@@ -24,7 +24,7 @@ namespace NSL.Network.XmlRpc
 	{
 		private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
-		private Encoding _encoding = new UTF8Encoding();
+		private Encoding _encoding = new ASCIIEncoding();
 		private XmlRpcRequestSerializer _serializer = new XmlRpcRequestSerializer();
 		private XmlRpcResponseDeserializer _deserializer = new XmlRpcResponseDeserializer();
 
@@ -42,9 +42,9 @@ namespace NSL.Network.XmlRpc
 		}
 
 
-		public XmlRpcResponse certSend(String url, X509Certificate2 myClientCert, bool checkServerCert, Int32 timeout)
+		public XmlRpcResponse certSend(String url, X509Certificate2 clientCert, bool checkServerCert, Int32 timeout)
 	  	{
-			//m_log.InfoFormat("[MONEY NSL RPC]: XmlRpcResponse certSend: connect to {0}", url);
+			m_log.InfoFormat("[MONEY NSL RPC]: XmlRpcResponse certSend: connect to {0}", url);
 
 			HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
 			if (request==null)
@@ -58,8 +58,8 @@ namespace NSL.Network.XmlRpc
 			request.Timeout = timeout;
 			request.UserAgent = "NSLXmlRpcRequest";
 
-			if (myClientCert!=null) request.ClientCertificates.Add(myClientCert);	// 自身の証明書
-			if (!checkServerCert)   request.Headers.Add("NoVerifyCert", "true");	// 相手の証明書を検証しない
+			if (clientCert!=null) request.ClientCertificates.Add(clientCert);	// 自身の証明書
+			if (!checkServerCert) request.Headers.Add("NoVerifyCert", "true");	// 相手の証明書を検証しない
 
 			Stream stream = request.GetRequestStream();
 			XmlTextWriter xml = new XmlTextWriter(stream, _encoding);
@@ -68,6 +68,7 @@ namespace NSL.Network.XmlRpc
 			xml.Close();
 
 			HttpWebResponse response = null;
+			//HttpWebResponse response = (HttpWebResponse)request.GetResponse();
 			try { 
 				response = (HttpWebResponse)request.GetResponse();
 			}

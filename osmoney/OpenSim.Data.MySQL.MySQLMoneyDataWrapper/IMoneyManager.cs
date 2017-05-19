@@ -55,7 +55,7 @@ namespace OpenSim.Data.MySQL.MySQLMoneyDataWrapper
 
         int getTransactionNum(string userID, int startTime, int endTime);
 
-        bool addUser(string userID, int balance, int status, int type);
+        bool addUser(string userID, int balance, int status);
 
         bool SetTransExpired(int deadTime);
 
