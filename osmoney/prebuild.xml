@@ -50,7 +50,6 @@
       <Reference name="System.Data"/>
       <Reference name="System.Drawing"/>
       <Reference name="System.Runtime.Remoting"/>
-      <Reference name="Axiom.MathLib.dll" path="../../bin/"/>
       <Reference name="Nini.dll" path="../../bin/"/>
       <Reference name="log4net.dll" path="../../bin/"/>
       <Reference name="XMLRPC.dll" path="../../bin/"/>
@@ -159,4 +158,3 @@
 
   </Solution>
 </Prebuild>
-
