@@ -196,14 +196,14 @@ namespace NSL.Certificate.Tools
 	//
 	public class NSLCertificatePolicy : ICertificatePolicy
 	{
-		//private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+		// private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
 		public bool CheckValidationResult(ServicePoint srvPoint, X509Certificate certificate, WebRequest request, int certificateProblem)
 		{
-			if (certificateProblem == 0 || 				//正常
-				certificateProblem == -2146762487 || 	//信頼されてない？
-				certificateProblem == -2146762495 || 	//期限切れ
-				certificateProblem == -2146762481) {	//名前不正？
+			if (certificateProblem == 0 || 				//Normal
+				certificateProblem == -2146762487 || 	//Not trusted？
+				certificateProblem == -2146762495 || 	//Expired
+				certificateProblem == -2146762481) {	//Invalid name？
 				return true;
 			}
 			else {

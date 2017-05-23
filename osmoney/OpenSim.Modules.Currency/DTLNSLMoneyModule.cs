@@ -243,7 +243,7 @@ namespace OpenSim.Modules.Currency
 
 		public void Initialise(IConfigSource source)
 		{
-			//m_log.InfoFormat("[MONEY]: Initialise:");
+			m_log.DebugFormat("[MONEY]: Initialise:");
 
 			// Handle the parameters errors.
 			if (source==null) return;
@@ -325,7 +325,7 @@ namespace OpenSim.Modules.Currency
 
 		public void AddRegion(Scene scene)
 		{
-			//m_log.InfoFormat("[MONEY]: AddRegion:");
+			m_log.DebugFormat("[MONEY]: AddRegion:");
 
 			if (scene==null) return;
 
@@ -381,45 +381,26 @@ namespace OpenSim.Modules.Currency
 			scene.EventManager.OnLandBuy 			+= processLandBuy;
 		}
 
-	
+		public void RemoveRegion(Scene scene) { }
 
-		public void RemoveRegion(Scene scene)
-		{
-		}
+		public void RegionLoaded(Scene scene) { }
 
-
-		public void RegionLoaded(Scene scene)
-		{
-		}
-
-
-		public Type ReplaceableInterface
-		{
+		public Type ReplaceableInterface {
 			//get { return typeof(IMoneyModule); }
 			get { return null; }
 		}
 
-
-		public bool IsSharedModule
-		{
+		public bool IsSharedModule {
 			get { return true; }
 		}
 
-
-		public string Name
-		{
+		public string Name {
 			get { return "DTLNSLMoneyModule"; }
 		}
 
+		public void PostInitialise() { }
 
-		public void PostInitialise()
-		{
-		}
-
-
-		public void Close()
-		{
-		}
+		public void Close() { }
 
 
 		#endregion
@@ -432,7 +413,7 @@ namespace OpenSim.Modules.Currency
 		// for LSL llGiveMoney() function
 		public bool ObjectGiveMoney(UUID objectID, UUID fromID, UUID toID, int amount)
 		{
-			//m_log.InfoFormat("[MONEY]: ObjectGiveMoney: LSL ObjectGiveMoney. UUID = {0}", objectID.ToString());
+			m_log.DebugFormat("[MONEY]: ObjectGiveMoney: LSL ObjectGiveMoney. UUID = {0}", objectID.ToString());
 
 			if (!m_sellEnabled) return false;
 
@@ -476,28 +457,24 @@ namespace OpenSim.Modules.Currency
 
 
 		//
-		public int UploadCharge
-		{
+		public int UploadCharge {
 			get { return PriceUpload; }
 		}
 
 
 		//
-		public int GroupCreationCharge
-		{
+		public int GroupCreationCharge {
 			get { return PriceGroupCreate; }
 		}
 
 
-		public int GetBalance(UUID agentID)
-		{
+		public int GetBalance(UUID agentID) {
 			IClientAPI client = GetLocateClient(agentID);
 			return QueryBalanceFromMoneyServer(client);
 		}
 
 
-		public bool UploadCovered(UUID agentID, int amount)
-		{
+		public bool UploadCovered(UUID agentID, int amount) {
 			IClientAPI client = GetLocateClient(agentID);
 			int balance = QueryBalanceFromMoneyServer(client);
 			if (balance<amount) return false;
@@ -505,8 +482,7 @@ namespace OpenSim.Modules.Currency
 		}
 
 
-		public bool AmountCovered(UUID agentID, int amount)
-		{
+		public bool AmountCovered(UUID agentID, int amount) {
 			IClientAPI client = GetLocateClient(agentID);
 			int balance = QueryBalanceFromMoneyServer(client);
 			if (balance<amount) return false;
@@ -514,8 +490,7 @@ namespace OpenSim.Modules.Currency
 		}
 
 
-		public void ApplyUploadCharge(UUID agentID, int amount, string text)
-		{
+		public void ApplyUploadCharge(UUID agentID, int amount, string text) {
 			ulong region = GetLocateScene(agentID).RegionInfo.RegionHandle;
 			PayMoneyCharge(agentID, amount, (int)MoneyTransactionType.UploadCharge, region, text);
 		}
@@ -531,8 +506,7 @@ namespace OpenSim.Modules.Currency
 			ApplyCharge(agentID, amount, TransactionType.GroupCreate, text);
 		}
 		*/
-		public void ApplyCharge(UUID agentID, int amount, MoneyTransactionType type)
-		{
+		public void ApplyCharge(UUID agentID, int amount, MoneyTransactionType type) {
 			ApplyCharge(agentID, amount, type, string.Empty);
 		}
 
@@ -541,21 +515,18 @@ namespace OpenSim.Modules.Currency
 		// for Aurora-Sim
 		//
 
-		public void ApplyCharge(UUID agentID, int amount, MoneyTransactionType type, string text)
-		{
+		public void ApplyCharge(UUID agentID, int amount, MoneyTransactionType type, string text) {
 			ulong region = GetLocateScene(agentID).RegionInfo.RegionHandle;
 			PayMoneyCharge(agentID, amount, (int)type, region, text);
 		}
 
 
-		public bool Transfer(UUID fromID, UUID toID, int regionHandle, int amount, MoneyTransactionType type, string text)
-		{
+		public bool Transfer(UUID fromID, UUID toID, int regionHandle, int amount, MoneyTransactionType type, string text) {
 			return TransferMoney(fromID, toID, amount, (int)type, UUID.Zero, (ulong)regionHandle, text);
 		}
 
 
-		public bool Transfer(UUID fromID, UUID toID, UUID objectID, int amount, MoneyTransactionType type, string text)
-		{
+		public bool Transfer(UUID fromID, UUID toID, UUID objectID, int amount, MoneyTransactionType type, string text) {
 			SceneObjectPart sceneObj = GetLocatePrim(objectID);
 			if (sceneObj==null) return false;
 
@@ -572,16 +543,14 @@ namespace OpenSim.Modules.Currency
 		#region MoneyModule event handlers
 
 		// 
-		private void OnNewClient(IClientAPI client)
-		{
+		private void OnNewClient(IClientAPI client) {
 			client.OnEconomyDataRequest += OnEconomyDataRequest;
 		}
 
 
 
-		public void OnMakeRootAgent(ScenePresence agent)
-		{
-			//m_log.InfoFormat("[MONEY]: OnMakeRootAgent:");
+		public void OnMakeRootAgent(ScenePresence agent) {
+			m_log.DebugFormat("[MONEY]: OnMakeRootAgent:");
 
 			int balance = 0;
 			IClientAPI client = agent.ControllingClient;
@@ -600,10 +569,9 @@ namespace OpenSim.Modules.Currency
 
 
 		// for OnClientClosed event
-		private void ClientClosed(IClientAPI client)
-		{
-			if (m_enable_server && client!=null)
-			{
+		private void ClientClosed(IClientAPI client) {
+
+			if (m_enable_server && client!=null) {
 				LogoffMoneyServer(client);
 			}
 		}
@@ -611,9 +579,8 @@ namespace OpenSim.Modules.Currency
 
 
 		// for OnMoneyTransferRequest event  (for Aurora-Sim)
-		private void MoneyTransferRequest(UUID sourceID, UUID destID, int amount, int transactionType, string description)
-		{
-			//m_log.InfoFormat("[MONEY]: MoneyTransferRequest: type = {0} {1} {2}", transactionType, amount, description);
+		private void MoneyTransferRequest(UUID sourceID, UUID destID, int amount, int transactionType, string description) {
+			m_log.DebugFormat("[MONEY]: MoneyTransferRequest: type = {0} {1} {2}", transactionType, amount, description);
 
 			if (transactionType==(int)MoneyTransactionType.UploadCharge) return;
 			EventManager.MoneyTransferArgs moneyEvent = new EventManager.MoneyTransferArgs(sourceID, destID, amount, transactionType, description);
@@ -626,7 +593,7 @@ namespace OpenSim.Modules.Currency
 		// for OnMoneyTransfer event  (for OpenSim)
 		private void MoneyTransferAction(Object sender, EventManager.MoneyTransferArgs moneyEvent)
 		{
-			//m_log.InfoFormat("[MONEY]: MoneyTransferAction: type = {0}", moneyEvent.transactiontype);
+			m_log.DebugFormat("[MONEY]: MoneyTransferAction: type = {0}", moneyEvent.transactiontype);
 		
 			if (!m_sellEnabled) return;
 
@@ -671,9 +638,7 @@ namespace OpenSim.Modules.Currency
 
 
 		// for OnMakeChildAgent event
-		private void MakeChildAgent(ScenePresence avatar)
-		{
-		}
+		private void MakeChildAgent(ScenePresence avatar) { }
 
 
 
@@ -683,7 +648,7 @@ namespace OpenSim.Modules.Currency
 		//		in OpenSim/Region/CoreModules/World/Land/ParcelManagementModule.cs
 		private void ValidateLandBuy(Object sender, EventManager.LandBuyArgs landBuyEvent)
 		{
-			//m_log.InfoFormat("[MONEY]: ValidateLandBuy:");
+			m_log.DebugFormat("[MONEY]: ValidateLandBuy:");
 			
 			IClientAPI senderClient = GetLocateClient(landBuyEvent.agentId);
 			if (senderClient!=null)
@@ -707,7 +672,7 @@ namespace OpenSim.Modules.Currency
 		//		in OpenSim/Region/CoreModules/World/Land/ParcelManagementModule.cs
 		private void processLandBuy(Object sender, EventManager.LandBuyArgs landBuyEvent)
 		{
-			//m_log.InfoFormat("[MONEY]: processLandBuy:");
+			m_log.DebugFormat("[MONEY]: processLandBuy:");
 
 			if (!m_sellEnabled) return;
 
@@ -739,7 +704,7 @@ namespace OpenSim.Modules.Currency
 		public void OnObjectBuy(IClientAPI remoteClient, UUID agentID, UUID sessionID, 
 								UUID groupID, UUID categoryID, uint localID, byte saleType, int salePrice)
 		{
-			//m_log.InfoFormat("[MONEY]: OnObjectBuy: agent = {0}, {1}", agentID, remoteClient.AgentId);
+			m_log.DebugFormat("[MONEY]: OnObjectBuy: agent = {0}, {1}", agentID, remoteClient.AgentId);
 
 			// Handle the parameters error.   
 			if (!m_sellEnabled) return;
@@ -794,7 +759,7 @@ namespace OpenSim.Modules.Currency
 		/// <param name="TransactionID"></param>   
 		private void OnMoneyBalanceRequest(IClientAPI client, UUID agentID, UUID SessionID, UUID TransactionID)
 		{
-			//m_log.InfoFormat("[MONEY]: OnMoneyBalanceRequest:");
+			m_log.DebugFormat("[MONEY]: OnMoneyBalanceRequest:");
 
 			if (client.AgentId==agentID && client.SessionId==SessionID)
 			{
@@ -817,7 +782,7 @@ namespace OpenSim.Modules.Currency
 
 		private void OnRequestPayPrice(IClientAPI client, UUID objectID)
 		{
-			//m_log.InfoFormat("[MONEY]: OnRequestPayPrice:");
+			m_log.DebugFormat("[MONEY]: OnRequestPayPrice:");
 
 			Scene scene = GetLocateScene(client.AgentId);
 			if (scene==null) return;
@@ -835,7 +800,7 @@ namespace OpenSim.Modules.Currency
 		//private void OnEconomyDataRequest(UUID agentId)
 		private void OnEconomyDataRequest(IClientAPI user)
 		{
-			//m_log.InfoFormat("[MONEY]: OnEconomyDataRequest:");
+			m_log.DebugFormat("[MONEY]: OnEconomyDataRequest:");
 
 			//IClientAPI user = GetLocateClient(agentId);
 
@@ -861,7 +826,7 @@ namespace OpenSim.Modules.Currency
 		// "OnMoneyTransfered" RPC from MoneyServer
 		public XmlRpcResponse OnMoneyTransferedHandler(XmlRpcRequest request, IPEndPoint remoteClient)
 		{
-			//m_log.InfoFormat("[MONEY]: OnMoneyTransferedHandler:");
+			m_log.DebugFormat("[MONEY]: OnMoneyTransferedHandler:");
 
 			bool ret = false;
 
@@ -926,7 +891,7 @@ namespace OpenSim.Modules.Currency
 		// "UpdateBalance" RPC from MoneyServer or Script
 		public XmlRpcResponse BalanceUpdateHandler(XmlRpcRequest request, IPEndPoint remoteClient)
 		{
-			//m_log.InfoFormat("[MONEY]: BalanceUpdateHandler:");
+			m_log.DebugFormat("[MONEY]: BalanceUpdateHandler:");
 
 			bool ret = false;
 
@@ -984,7 +949,7 @@ namespace OpenSim.Modules.Currency
 		// "UserAlert" RPC from Script
 		public XmlRpcResponse UserAlertHandler(XmlRpcRequest request, IPEndPoint remoteClient)
 		{
-			//m_log.InfoFormat("[MONEY]: UserAlertHandler:");
+			m_log.DebugFormat("[MONEY]: UserAlertHandler:");
 
 			bool ret = false;
 
@@ -1036,7 +1001,7 @@ namespace OpenSim.Modules.Currency
 		// "GetBalance" RPC from Script
 		public XmlRpcResponse GetBalanceHandler(XmlRpcRequest request, IPEndPoint remoteClient)
 		{
-			//m_log.InfoFormat("[MONEY]: GetBalanceHandler:");
+			m_log.DebugFormat("[MONEY]: GetBalanceHandler:");
 
 			bool ret = false;
 			int  balance = -1;
@@ -1084,7 +1049,7 @@ namespace OpenSim.Modules.Currency
 		// "AddBankerMoney" RPC from Script
 		public XmlRpcResponse AddBankerMoneyHandler(XmlRpcRequest request, IPEndPoint remoteClient)
 		{
-			//m_log.InfoFormat("[MONEY]: AddBankerMoneyHandler:");
+			m_log.DebugFormat("[MONEY]: AddBankerMoneyHandler:");
 
 			bool ret = false;
 
@@ -1143,7 +1108,7 @@ namespace OpenSim.Modules.Currency
 		// "SendMoneyBalance" RPC from Script
 		public XmlRpcResponse SendMoneyBalanceHandler(XmlRpcRequest request, IPEndPoint remoteClient)
 		{
-			//m_log.InfoFormat("[MONEY]: SendMoneyBalanceHandler:");
+			m_log.DebugFormat("[MONEY]: SendMoneyBalanceHandler:");
 
 			bool ret = false;
 
@@ -1303,7 +1268,7 @@ namespace OpenSim.Modules.Currency
 		/// </returns>   
 		private bool TransferMoney(UUID sender, UUID receiver, int amount, int type, UUID objectID, ulong regionHandle, string description)
 		{
-			//m_log.InfoFormat("[MONEY]: TransferMoney:");
+			m_log.DebugFormat("[MONEY]: TransferMoney:");
 
 			bool ret = false;
 			IClientAPI senderClient = GetLocateClient(sender);
@@ -1372,7 +1337,7 @@ namespace OpenSim.Modules.Currency
 		/// </returns>   
 		private bool ForceTransferMoney(UUID sender, UUID receiver, int amount, int type, UUID objectID, ulong regionHandle, string description)
 		{
-			//m_log.InfoFormat("[MONEY]: ForceTransferMoney:");
+			m_log.DebugFormat("[MONEY]: ForceTransferMoney:");
 
 			bool ret = false;
 
@@ -1423,7 +1388,7 @@ namespace OpenSim.Modules.Currency
 		/// </returns>   
 		private bool AddBankerMoney(UUID bankerID, int amount, ulong regionHandle)
 		{
-			//m_log.InfoFormat("[MONEY]: AddBankerMoney:");
+			m_log.DebugFormat("[MONEY]: AddBankerMoney:");
 
 			bool ret = false;
 			m_settle_user = false;
@@ -1478,7 +1443,7 @@ namespace OpenSim.Modules.Currency
 		/// </returns>   
 		private bool SendMoneyBalance(UUID avatarID, int amount, string secretCode)
 		{
-			//m_log.InfoFormat("[MONEY]: SendMoneyBalance:");
+			m_log.DebugFormat("[MONEY]: SendMoneyBalance:");
 
 			bool ret = false;
 
@@ -1524,7 +1489,7 @@ namespace OpenSim.Modules.Currency
 		/// </returns>   
 		private bool PayMoneyCharge(UUID sender, int amount, int type, ulong regionHandle, string description)
 		{
-			//m_log.InfoFormat("[MONEY]: PayMoneyCharge:");
+			m_log.DebugFormat("[MONEY]: PayMoneyCharge:");
 
 			bool ret = false;
 			IClientAPI senderClient = GetLocateClient(sender);
@@ -1589,7 +1554,7 @@ namespace OpenSim.Modules.Currency
 		/// </returns>   
 		private bool LoginMoneyServer(IClientAPI client, out int balance)
 		{
-			//m_log.InfoFormat("[MONEY]: LoginMoneyServer:");
+			m_log.DebugFormat("[MONEY]: LoginMoneyServer:");
 
 			bool ret = false;
 			balance = 0;
@@ -1661,7 +1626,7 @@ namespace OpenSim.Modules.Currency
 		/// </returns>   
 		private bool LogoffMoneyServer(IClientAPI client)
 		{
-			//m_log.InfoFormat("[MONEY]: LogoffMoneyServer:");
+			m_log.DebugFormat("[MONEY]: LogoffMoneyServer:");
 
 			bool ret = false;
 
@@ -1698,7 +1663,7 @@ namespace OpenSim.Modules.Currency
 		/// <returns>Hashtable with success=>bool and other values</returns>   
 		private Hashtable genericCurrencyXMLRPCRequest(Hashtable reqParams, string method)
 		{
-			//m_log.InfoFormat("[MONEY]: genericCurrencyXMLRPCRequest:");
+			m_log.DebugFormat("[MONEY]: genericCurrencyXMLRPCRequest:");
 
 			if (reqParams.Count<=0 || string.IsNullOrEmpty(method)) return null;
 
@@ -1757,7 +1722,7 @@ namespace OpenSim.Modules.Currency
 
 		private int QueryBalanceFromMoneyServer(IClientAPI client)
 		{
-			//m_log.InfoFormat("[MONEY]: QueryBalanceFromMoneyServer:");
+			m_log.DebugFormat("[MONEY]: QueryBalanceFromMoneyServer:");
 
 			int balance = 0;
 
@@ -1803,7 +1768,7 @@ namespace OpenSim.Modules.Currency
 		//
 		private EventManager.MoneyTransferArgs GetTransactionInfo(IClientAPI client, string transactionID)
 		{
-			//m_log.InfoFormat("[MONEY]: GetTransactionInfo:");
+			m_log.DebugFormat("[MONEY]: GetTransactionInfo:");
 
 			EventManager.MoneyTransferArgs args = null;
 
