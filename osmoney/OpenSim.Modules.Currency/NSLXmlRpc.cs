@@ -29,14 +29,12 @@ namespace NSL.Network.XmlRpc
 		private XmlRpcResponseDeserializer _deserializer = new XmlRpcResponseDeserializer();
 
 
-		public NSLXmlRpcRequest()
-	  	{
+		public NSLXmlRpcRequest() {
 	  		_params = new ArrayList();
 	  	}
 
 
-		public NSLXmlRpcRequest(String methodName, IList parameters)
-		{
+		public NSLXmlRpcRequest(String methodName, IList parameters) {
 			MethodName = methodName;
 			_params = parameters;
 		}

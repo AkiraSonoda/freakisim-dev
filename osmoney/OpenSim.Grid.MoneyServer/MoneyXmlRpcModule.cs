@@ -173,9 +173,9 @@ namespace OpenSim.Grid.MoneyServer
 			m_BalanceMessageReceiveMoney = m_config.GetString("BalanceMessageReceiveMoney", m_BalanceMessageReceiveMoney);
 			m_BalanceMessageRollBack	 = m_config.GetString("BalanceMessageRollBack", 	m_BalanceMessageRollBack);
 
-			m_sessionDic = m_moneyCore.GetSessionDic();
-			m_secureSessionDic = m_moneyCore.GetSecureSessionDic();
-			m_webSessionDic = m_moneyCore.GetWebSessionDic();
+			m_sessionDic = m_moneyCore.getSessionDic();
+			m_secureSessionDic = m_moneyCore.getSecureSessionDic();
+			m_webSessionDic = m_moneyCore.getWebSessionDic();
 			RegisterHandlers();
 		}
 
@@ -187,7 +187,7 @@ namespace OpenSim.Grid.MoneyServer
 
 		public void RegisterHandlers()
 		{
-			m_httpServer = m_moneyCore.GetHttpServer();
+			m_httpServer = m_moneyCore.getHttpServer();
 			m_httpServer.AddXmlRPCHandler("ClientLogin", handleClientLogin);
 			m_httpServer.AddXmlRPCHandler("ClientLogout", handleClientLogout);
 			m_httpServer.AddXmlRPCHandler("GetBalance", handleGetBalance);
@@ -321,7 +321,7 @@ namespace OpenSim.Grid.MoneyServer
 				//TODO: Add password protection here
 				user.PswHash = UUID.Zero.ToString();
 
-				if (!m_moneyDBService.TryAddUserInfo(user))
+				if (!m_moneyDBService.tryAddUserInfo(user))
 				{
 					m_log.ErrorFormat("[MONEY RPC]: handleClientLogin: Unable to refresh information for user \"{0}\" in DB", avatarName);
 					responseData["success"] = false;
@@ -407,7 +407,7 @@ namespace OpenSim.Grid.MoneyServer
 						transaction.CommonName  = GetSSLCommonName();
 						transaction.Description = description + " " + DateTime.Now.ToString();
 
-						UserInfo rcvr = m_moneyDBService.FetchUserInfo(receiverID);
+						UserInfo rcvr = m_moneyDBService.fetchUserInfo(receiverID);
 						if (rcvr==null) 
 						{
 							m_log.ErrorFormat("[MONEY RPC]: handleTransaction: Receive User is not yet in DB {0}", receiverID);
@@ -418,7 +418,7 @@ namespace OpenSim.Grid.MoneyServer
 						bool result = m_moneyDBService.addTransaction(transaction);
 						if (result) 
 						{
-							UserInfo user = m_moneyDBService.FetchUserInfo(senderID);
+							UserInfo user = m_moneyDBService.fetchUserInfo(senderID);
 							if (user!=null) 
 							{
 								if (amount!=0)
@@ -542,7 +542,7 @@ namespace OpenSim.Grid.MoneyServer
 				transaction.CommonName  = GetSSLCommonName();
 				transaction.Description = description + " " + DateTime.Now.ToString();
 
-				UserInfo rcvr = m_moneyDBService.FetchUserInfo(receiverID);
+				UserInfo rcvr = m_moneyDBService.fetchUserInfo(receiverID);
 				if (rcvr==null) 
 				{
 					m_log.ErrorFormat("[MONEY RPC]: handleForceTransaction: Force receive User is not yet in DB {0}", receiverID);
@@ -553,7 +553,7 @@ namespace OpenSim.Grid.MoneyServer
 				bool result = m_moneyDBService.addTransaction(transaction);
 				if (result) 
 				{
-					UserInfo user = m_moneyDBService.FetchUserInfo(senderID);
+					UserInfo user = m_moneyDBService.fetchUserInfo(senderID);
 					if (user!=null) 
 					{
 						if (amount!=0)
@@ -669,7 +669,7 @@ namespace OpenSim.Grid.MoneyServer
 				transaction.CommonName  = GetSSLCommonName();
 				transaction.Description = description + " " + DateTime.Now.ToString();
 
-				UserInfo rcvr = m_moneyDBService.FetchUserInfo(bankerID);
+				UserInfo rcvr = m_moneyDBService.fetchUserInfo(bankerID);
 				if (rcvr==null) 
 				{
 					m_log.ErrorFormat("[MONEY RPC]: handleAddBankerMoney: Avatar is not yet in DB {0}", bankerID);
@@ -681,9 +681,9 @@ namespace OpenSim.Grid.MoneyServer
 				{
 					if (amount!=0)
 					{
-						if (m_moneyDBService.DoAddMoney(transactionUUID))
+						if (m_moneyDBService.doAddMoney(transactionUUID))
 						{
-							transaction = m_moneyDBService.FetchTransaction(transactionUUID);
+							transaction = m_moneyDBService.fetchTransaction(transactionUUID);
 							if (transaction!=null && transaction.Status==(int)Status.SUCCESS_STATUS)
 							{
 								m_log.InfoFormat("[MONEY RPC]: handleAddBankerMoney: Adding money finished successfully, now update balance: {0}", 
@@ -794,7 +794,7 @@ namespace OpenSim.Grid.MoneyServer
 				transaction.CommonName  = GetSSLCommonName();
 				transaction.Description = description + " " + DateTime.Now.ToString();
 
-				UserInfo rcvr = m_moneyDBService.FetchUserInfo(avatarID);
+				UserInfo rcvr = m_moneyDBService.fetchUserInfo(avatarID);
 				if (rcvr==null) 
 				{
 					m_log.ErrorFormat("[MONEY RPC]: handleSendMoneyBalance: Avatar is not yet in DB: {0}", avatarID);
@@ -806,9 +806,9 @@ namespace OpenSim.Grid.MoneyServer
 				{
 					if (amount!=0)
 					{
-						if (m_moneyDBService.DoAddMoney(transactionUUID))
+						if (m_moneyDBService.doAddMoney(transactionUUID))
 						{
-							transaction = m_moneyDBService.FetchTransaction(transactionUUID);
+							transaction = m_moneyDBService.fetchTransaction(transactionUUID);
 							if (transaction!=null && transaction.Status==(int)Status.SUCCESS_STATUS)
 							{
 								m_log.InfoFormat("[MONEY RPC]: handleSendMoneyBalance: Sending money finished successfully, now update balance {0}", 
@@ -905,7 +905,7 @@ namespace OpenSim.Grid.MoneyServer
 						bool result = m_moneyDBService.addTransaction(transaction);
 						if (result) 
 						{
-							UserInfo user = m_moneyDBService.FetchUserInfo(senderID);
+							UserInfo user = m_moneyDBService.fetchUserInfo(senderID);
 							if (user!=null) 
 							{
 								if (amount!=0)
@@ -961,9 +961,9 @@ namespace OpenSim.Grid.MoneyServer
 
 			try
 			{
-				if (m_moneyDBService.DoTransfer(transactionUUID))
+				if (m_moneyDBService.doTransfer(transactionUUID))
 				{
-					TransactionData transaction = m_moneyDBService.FetchTransaction(transactionUUID);
+					TransactionData transaction = m_moneyDBService.fetchTransaction(transactionUUID);
 					if (transaction!=null && transaction.Status==(int)Status.SUCCESS_STATUS)
 					{
 						//m_log.InfoFormat("[MONEY RPC]: NotifyTransfer: Transaction Type = {0}", transaction.Type);
@@ -976,14 +976,14 @@ namespace OpenSim.Grid.MoneyServer
 						if (transaction.Type==(int)TransactionType.UploadCharge) updateReceiv = false;
 
 						if (updateSender) {
-							UserInfo receiverInfo = m_moneyDBService.FetchUserInfo(transaction.Receiver);
+							UserInfo receiverInfo = m_moneyDBService.fetchUserInfo(transaction.Receiver);
 							string receiverName = "unknown user";
 							if (receiverInfo!=null) receiverName = receiverInfo.Avatar;
 							string snd_message = string.Format(msg2sender, transaction.Amount, receiverName);
 							UpdateBalance(transaction.Sender, snd_message);
 						}
 						if (updateReceiv) {
-							UserInfo senderInfo = m_moneyDBService.FetchUserInfo(transaction.Sender);
+							UserInfo senderInfo = m_moneyDBService.fetchUserInfo(transaction.Sender);
 							string senderName = "unknown user";
 							if (senderInfo!=null) senderName = senderInfo.Avatar;
 							string rcv_message = string.Format(msg2receiver, transaction.Amount, senderName);
@@ -1013,7 +1013,7 @@ namespace OpenSim.Grid.MoneyServer
 							requestTable["objectID"] = transaction.ObjectUUID;
 							requestTable["regionHandle"] = transaction.RegionHandle;
 
-							UserInfo user = m_moneyDBService.FetchUserInfo(transaction.Sender);
+							UserInfo user = m_moneyDBService.fetchUserInfo(transaction.Sender);
 							if (user!=null)
 							{
 								Hashtable responseTable = genericCurrencyXMLRPCRequest(requestTable, "OnMoneyTransfered", user.SimIP);
@@ -1266,7 +1266,7 @@ namespace OpenSim.Grid.MoneyServer
 				requestTable["Balance"] = m_moneyDBService.getBalance(userID);
 				if (message!="") requestTable["Message"] = message;
 
-				UserInfo user = m_moneyDBService.FetchUserInfo(userID);
+				UserInfo user = m_moneyDBService.fetchUserInfo(userID);
 				if (user!=null) {
 					genericCurrencyXMLRPCRequest(requestTable, "UpdateBalance", user.SimIP);
 					//m_log.InfoFormat("[MONEY RPC]: UpdateBalance: Sended UpdateBalance Request to {0}", user.SimIP.ToString());
@@ -1293,8 +1293,8 @@ namespace OpenSim.Grid.MoneyServer
 					m_moneyDBService.updateTransactionStatus(transaction.TransUUID, (int)Status.FAILED_STATUS, 
 																	"The buyer failed to get the object, roll back the transaction");
 
-					UserInfo senderInfo   = m_moneyDBService.FetchUserInfo(transaction.Sender);
-					UserInfo receiverInfo = m_moneyDBService.FetchUserInfo(transaction.Receiver);
+					UserInfo senderInfo   = m_moneyDBService.fetchUserInfo(transaction.Sender);
+					UserInfo receiverInfo = m_moneyDBService.fetchUserInfo(transaction.Receiver);
 					string senderName 	= "unknown user";
 					string receiverName = "unknown user";
 					if (senderInfo!=null)   senderName   = senderInfo.Avatar;
@@ -1344,13 +1344,13 @@ namespace OpenSim.Grid.MoneyServer
 				return response;
 			}
 
-			TransactionData transaction = m_moneyDBService.FetchTransaction(transactionUUID);
-			UserInfo user = m_moneyDBService.FetchUserInfo(transaction.Sender);
+			TransactionData transaction = m_moneyDBService.fetchTransaction(transactionUUID);
+			UserInfo user = m_moneyDBService.fetchUserInfo(transaction.Sender);
 		 
 			try
 			{
 				m_log.InfoFormat("[MONEY RPC]: handleCancelTransfer: User {0} wanted to cancel the transaction", user.Avatar);
-				if (m_moneyDBService.ValidateTransfer(secureCode, transactionUUID))
+				if (m_moneyDBService.validateTransfer(secureCode, transactionUUID))
 				{
 					m_log.InfoFormat("[MONEY RPC]: handleCancelTransfer: User {0} has canceled the transaction {1}", user.Avatar, transactionID);
 					m_moneyDBService.updateTransactionStatus(transactionUUID, (int)Status.FAILED_STATUS, 
@@ -1409,7 +1409,7 @@ namespace OpenSim.Grid.MoneyServer
 					}
 
 					try {
-						TransactionData transaction = m_moneyDBService.FetchTransaction(transactionUUID);
+						TransactionData transaction = m_moneyDBService.fetchTransaction(transactionUUID);
 						if (transaction!=null)
 						{
 							responseData["success"]  = true;
@@ -1563,7 +1563,7 @@ namespace OpenSim.Grid.MoneyServer
 					try
 					{
 						balance = m_moneyDBService.getBalance(userID);
-						UserInfo user = m_moneyDBService.FetchUserInfo(userID);
+						UserInfo user = m_moneyDBService.fetchUserInfo(userID);
 						if (user!=null)
 						{
 							responseData["userName"] = user.Avatar;
@@ -1652,11 +1652,11 @@ namespace OpenSim.Grid.MoneyServer
 							responseData["isEnd"] = true;
 						}
 
-						tran = m_moneyDBService.FetchTransaction(userID, startTime, endTime, lastIndex);
+						tran = m_moneyDBService.fetchTransaction(userID, startTime, endTime, lastIndex);
 						if (tran!=null)
 						{
-							UserInfo senderInfo = m_moneyDBService.FetchUserInfo(tran.Sender);
-							UserInfo receiverInfo = m_moneyDBService.FetchUserInfo(tran.Receiver);
+							UserInfo senderInfo = m_moneyDBService.fetchUserInfo(tran.Sender);
+							UserInfo receiverInfo = m_moneyDBService.fetchUserInfo(tran.Receiver);
 							if (senderInfo!=null && receiverInfo!=null)
 							{
 								responseData["senderName"] = senderInfo.Avatar;

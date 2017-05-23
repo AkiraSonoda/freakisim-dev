@@ -36,7 +36,7 @@ namespace OpenSim.Grid.MoneyServer
             XmlConfigurator.Configure();
             MoneyServerBase app = new MoneyServerBase();
             app.Startup();
-            app.Work();
+            app.work();
         }
     }
 }

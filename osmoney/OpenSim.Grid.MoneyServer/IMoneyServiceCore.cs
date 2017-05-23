@@ -36,9 +36,9 @@ namespace OpenSim.Grid.MoneyServer
 {
     public interface IMoneyServiceCore
     {
-        BaseHttpServer GetHttpServer();
-        Dictionary<string, string> GetSessionDic();
-        Dictionary<string, string> GetSecureSessionDic();
-        Dictionary<string, string> GetWebSessionDic();
+        BaseHttpServer getHttpServer();
+        Dictionary<string, string> getSessionDic();
+        Dictionary<string, string> getSecureSessionDic();
+        Dictionary<string, string> getWebSessionDic();
     }
 }

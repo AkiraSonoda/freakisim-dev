@@ -49,20 +49,17 @@ namespace OpenSim.Grid.MoneyServer
         public int m_lastConnect = 0;
 
 
-        public MoneyDBService(string connect)
-        {
+        public MoneyDBService(string connect) {
             m_connect = connect;
-            Initialise(m_connect,10);
+            initialise(m_connect,10);
         }
 
 
-        public MoneyDBService()
-        {
-        }
+        public MoneyDBService() { }
 
 
-        public void Initialise(string connectionString,int maxDBConnections)
-        {
+        public void initialise(string connectionString,int maxDBConnections) {
+			m_log.DebugFormat ("Initialise");
             m_maxConnections = maxDBConnections;
             if (connectionString != string.Empty)
             {
@@ -84,8 +81,9 @@ namespace OpenSim.Grid.MoneyServer
         }
 
 
-        private MySQLSuperManager GetLockedConnection()
+        private MySQLSuperManager getLockedConnection()
         {
+			m_log.DebugFormat ("GetLockedConnection");
             int lockedCons = 0;
             while (true)
             {
@@ -114,16 +112,17 @@ namespace OpenSim.Grid.MoneyServer
         }
 
 
-        public int getBalance(string userID)
-        {
-            MySQLSuperManager dbm = GetLockedConnection();
+        public int getBalance(string userID) {
+			m_log.DebugFormat ("getBalance({1})", userID);
+
+            MySQLSuperManager dbm = getLockedConnection();
             try
             {
                 return dbm.Manager.getBalance(userID);
             }
             catch(Exception e)
             {
-                dbm.Manager.Reconnect();
+                dbm.Manager.reconnect();
                 m_log.Error(e.ToString());
                 return 0;
             }
@@ -134,16 +133,17 @@ namespace OpenSim.Grid.MoneyServer
         }
 
 
-        public bool withdrawMoney(UUID transactionID, string senderID, int amount)
-        {
-            MySQLSuperManager dbm = GetLockedConnection();
+        public bool withdrawMoney(UUID transactionID, string senderID, int amount) {
+			m_log.DebugFormat ("withdrawMoney({1},{2},{3})", transactionID, senderID, amount);
+				
+			MySQLSuperManager dbm = getLockedConnection();
             try
             {
                 return dbm.Manager.withdrawMoney(transactionID, senderID, amount);
             }
             catch (Exception e)
             {
-                dbm.Manager.Reconnect();
+                dbm.Manager.reconnect();
                 m_log.Error(e.ToString());
                 return false;
             }
@@ -154,16 +154,17 @@ namespace OpenSim.Grid.MoneyServer
         }
 
 
-        public bool giveMoney(UUID transactionID, string receiverID, int amount)
-        {
-            MySQLSuperManager dbm = GetLockedConnection();
+        public bool giveMoney(UUID transactionID, string receiverID, int amount) {
+			m_log.DebugFormat ("giveMoney({1},{2},{3})", transactionID, receiverID, amount);
+
+            MySQLSuperManager dbm = getLockedConnection();
             try
             {
                 return dbm.Manager.giveMoney(transactionID, receiverID, amount);
             }
             catch (Exception e)
             {
-                dbm.Manager.Reconnect();
+                dbm.Manager.reconnect();
                 m_log.Error(e.ToString());
                 return false;
             }
@@ -174,16 +175,17 @@ namespace OpenSim.Grid.MoneyServer
         }
 
 
-        public bool addTransaction(TransactionData transaction)
-        {
-            MySQLSuperManager dbm = GetLockedConnection();
+        public bool addTransaction(TransactionData transaction) {
+			m_log.DebugFormat ("addTransaction(TransactionData)");
+
+            MySQLSuperManager dbm = getLockedConnection();
             try
             {
                 return dbm.Manager.addTransaction(transaction);
             }
             catch (Exception e)
             {
-                dbm.Manager.Reconnect();
+                dbm.Manager.reconnect();
                 m_log.Error(e.ToString());
                 return false;
             }
@@ -194,16 +196,17 @@ namespace OpenSim.Grid.MoneyServer
         }
 
 
-        public bool addUser(string userID, int balance, int status)
-        {
-            MySQLSuperManager dbm = GetLockedConnection();
+        public bool addUser(string userID, int balance, int status) {
+			m_log.DebugFormat ("addUser({1},{2},{3})", userID,balance,status);
+
+            MySQLSuperManager dbm = getLockedConnection();
             try
             {
                 return dbm.Manager.addUser(userID, balance, status);
             }
             catch (Exception e)
             {
-                dbm.Manager.Reconnect();
+                dbm.Manager.reconnect();
                 m_log.Error(e.ToString());
                 return false;
             }
@@ -214,16 +217,17 @@ namespace OpenSim.Grid.MoneyServer
         }
 
 
-        public bool updateTransactionStatus(UUID transactionID, int status, string description)
-        {
-            MySQLSuperManager dbm = GetLockedConnection();
+        public bool updateTransactionStatus(UUID transactionID, int status, string description) {
+			m_log.DebugFormat ("updateTransactionStatus({1},{2},{3})", transactionID, status, description);
+
+            MySQLSuperManager dbm = getLockedConnection();
             try
             {
                 return dbm.Manager.updateTransactionStatus(transactionID, status, description);
             }
             catch (Exception e)
             {
-                dbm.Manager.Reconnect();
+                dbm.Manager.reconnect();
                 m_log.Error(e.ToString());
                 return false;
             }
@@ -234,16 +238,17 @@ namespace OpenSim.Grid.MoneyServer
         }
 
 
-        public bool SetTransExpired(int deadTime)
-        {
-            MySQLSuperManager dbm = GetLockedConnection();
+        public bool setTransExpired(int deadTime) {
+			m_log.DebugFormat ("setTransExpired({})", deadTime);
+
+            MySQLSuperManager dbm = getLockedConnection();
             try
             {
-                return dbm.Manager.SetTransExpired(deadTime);
+                return dbm.Manager.setTransExpired(deadTime);
             }
             catch (Exception e)
             {
-                dbm.Manager.Reconnect();
+                dbm.Manager.reconnect();
                 m_log.Error(e.ToString());
                 return false;
             }
@@ -254,16 +259,17 @@ namespace OpenSim.Grid.MoneyServer
         }
 
 
-        public bool ValidateTransfer(string secureCode, UUID transactionID)
-        {
-            MySQLSuperManager dbm = GetLockedConnection();
+        public bool validateTransfer(string secureCode, UUID transactionID) {
+			m_log.DebugFormat ("validateTransfer({1},{2})", secureCode, transactionID);
+
+            MySQLSuperManager dbm = getLockedConnection();
             try
             {
-                return dbm.Manager.ValidateTransfer(secureCode, transactionID);
+                return dbm.Manager.validateTransfer(secureCode, transactionID);
             }
             catch (Exception e)
             {
-                dbm.Manager.Reconnect();
+                dbm.Manager.reconnect();
                 m_log.Error(e.ToString());
                 return false;
             }
@@ -274,16 +280,17 @@ namespace OpenSim.Grid.MoneyServer
         }
 
 
-        public TransactionData FetchTransaction(UUID transactionID)
-        {
-            MySQLSuperManager dbm = GetLockedConnection();
+        public TransactionData fetchTransaction(UUID transactionID) {
+			m_log.DebugFormat ("fetchTransaction({1})", transactionID);
+
+            MySQLSuperManager dbm = getLockedConnection();
             try
             {
-                return dbm.Manager.FetchTransaction(transactionID);
+                return dbm.Manager.fetchTransaction(transactionID);
             }
             catch (Exception e)
             {
-                dbm.Manager.Reconnect();
+                dbm.Manager.reconnect();
                 m_log.Error(e.ToString());
                 return null;
             }
@@ -294,15 +301,16 @@ namespace OpenSim.Grid.MoneyServer
         }
 
 
-        public TransactionData FetchTransaction(string userID, int startTime, int endTime, int lastIndex)
-        {
-            MySQLSuperManager dbm = GetLockedConnection();
+        public TransactionData fetchTransaction(string userID, int startTime, int endTime, int lastIndex) {
+			m_log.DebugFormat ("fetchTransaction({1},{2},{3},{4})", userID, startTime, endTime, lastIndex);
+
+            MySQLSuperManager dbm = getLockedConnection();
             TransactionData[] arrTransaction;
             try
             {
                 if (lastIndex < 0)
                 {
-                    arrTransaction = dbm.Manager.FetchTransaction(userID, startTime, endTime, 0, 1);
+                    arrTransaction = dbm.Manager.fetchTransaction(userID, startTime, endTime, 0, 1);
                     if (arrTransaction.Length > 0)
                     {
                         return arrTransaction[0];
@@ -313,7 +321,7 @@ namespace OpenSim.Grid.MoneyServer
                 else
                 {
                     uint index = Convert.ToUInt32(lastIndex);
-                    arrTransaction = dbm.Manager.FetchTransaction(userID, startTime, endTime, index + 1, 1);
+                    arrTransaction = dbm.Manager.fetchTransaction(userID, startTime, endTime, index + 1, 1);
                     if (arrTransaction.Length > 0)
                     {
                         return arrTransaction[0];
@@ -324,7 +332,7 @@ namespace OpenSim.Grid.MoneyServer
             }
             catch (Exception e)
             {
-                dbm.Manager.Reconnect();
+                dbm.Manager.reconnect();
                 m_log.Error(e.ToString());
                 return null;
             }
@@ -335,10 +343,11 @@ namespace OpenSim.Grid.MoneyServer
         }
 
 
-        public bool DoTransfer(UUID transactionUUID)
-        {
+        public bool doTransfer(UUID transactionUUID) {
+			m_log.DebugFormat ("doTransfer({1})", transactionUUID);
+
             TransactionData transaction = new TransactionData();
-            transaction = FetchTransaction(transactionUUID);
+            transaction = fetchTransaction(transactionUUID);
             if (transaction != null && transaction.Status == (int)Status.PENDING_STATUS)
             {
                 int balance = getBalance(transaction.Sender);
@@ -393,10 +402,11 @@ namespace OpenSim.Grid.MoneyServer
 
 
 		// by Fumi.Iseki
-        public bool DoAddMoney(UUID transactionUUID)
-        {
+        public bool doAddMoney(UUID transactionUUID) {
+			m_log.DebugFormat ("doAddMoney({1})", transactionUUID);
+
             TransactionData transaction = new TransactionData();
-            transaction = FetchTransaction(transactionUUID);
+            transaction = fetchTransaction(transactionUUID);
 			
             if (transaction != null && transaction.Status == (int)Status.PENDING_STATUS)
             {
@@ -421,9 +431,10 @@ namespace OpenSim.Grid.MoneyServer
         }
 
 
-        public bool TryAddUserInfo(UserInfo user)
-        {
-            MySQLSuperManager dbm = GetLockedConnection();
+        public bool tryAddUserInfo(UserInfo user) {
+			m_log.DebugFormat ("tryAddUserInfo(UserInfo)");
+
+            MySQLSuperManager dbm = getLockedConnection();
             try
             {
                 if (dbm.Manager.fetchUserInfo(user.UserID) != null)
@@ -441,9 +452,9 @@ namespace OpenSim.Grid.MoneyServer
             }
             catch (Exception e)
             {
-                dbm.Manager.Reconnect();
+                dbm.Manager.reconnect();
                 // Fumi.Iseki
-                m_moneyManager.Reconnect();
+                m_moneyManager.reconnect();
                 m_log.Error(e.ToString());
                 return false;
             }
@@ -454,16 +465,17 @@ namespace OpenSim.Grid.MoneyServer
         }
 
 
-        public UserInfo FetchUserInfo(string userID)
-        {
-            MySQLSuperManager dbm = GetLockedConnection();
+        public UserInfo fetchUserInfo(string userID) {
+			m_log.DebugFormat ("fetchUserInfo({1})", userID);
+
+            MySQLSuperManager dbm = getLockedConnection();
             try
             {
                 return dbm.Manager.fetchUserInfo(userID);
             }
             catch (Exception e)
             {
-                dbm.Manager.Reconnect();
+                dbm.Manager.reconnect();
                 m_log.Error(e.ToString());
                 return null;
             }
@@ -474,16 +486,17 @@ namespace OpenSim.Grid.MoneyServer
         }
 
 
-        public int getTransactionNum(string userID, int startTime, int endTime)
-        {
-            MySQLSuperManager dbm = GetLockedConnection();
+        public int getTransactionNum(string userID, int startTime, int endTime) {
+			m_log.DebugFormat ("getTransactionNum({1},{2},{3})", userID, startTime, endTime);
+
+            MySQLSuperManager dbm = getLockedConnection();
             try
             {
                 return dbm.Manager.getTransactionNum(userID,startTime,endTime);
             }
             catch (Exception e)
             {
-                dbm.Manager.Reconnect();
+                dbm.Manager.reconnect();
                 m_log.Error(e.ToString());
                 return -1;
             }

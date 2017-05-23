@@ -61,19 +61,19 @@ namespace OpenSim.Data.MySQL.MySQLMoneyDataWrapper
 		{
 			string s = "Server=" + hostname + ";Port=" + port + ";Database=" + database + ";User ID=" +
 				username + ";Password=" + password + ";Pooling=" + cpooling + ";";
-			Initialise(s);
+			initialise(s);
 		}
 
 
 
 		public MySQLMoneyManager(string connect)
 		{
-			Initialise(connect);
+			initialise(connect);
 		}
 
 
 
-		private void Initialise(string connect)
+		private void initialise(string connect)
 		{
 			try
 			{
@@ -98,14 +98,14 @@ namespace OpenSim.Data.MySQL.MySQLMoneyDataWrapper
 			try
 			{
 				Dictionary<string,string> tableList = new Dictionary<string,string>();
-				tableList = CheckTables();
+				tableList = checkTables();
 
 				// Balances Table
 				if (!tableList.ContainsKey(Table_of_Balance))
 				{
 					try
 					{
-						CreateBalanceTable();
+						createBalanceTable();
 					}
 					catch (Exception e)
 					{
@@ -119,7 +119,7 @@ namespace OpenSim.Data.MySQL.MySQLMoneyDataWrapper
 					switch (nVer)
 					{
 						case 1: //Rev.1
-							UpdateBalanceTable1();
+							updateBalanceTable1();
 							break;
 					}
 				}
@@ -130,7 +130,7 @@ namespace OpenSim.Data.MySQL.MySQLMoneyDataWrapper
 				{
 					try
 					{
-						CreateUserTable();
+						createUserTable();
 					}
 					catch (Exception e)
 					{
@@ -144,7 +144,7 @@ namespace OpenSim.Data.MySQL.MySQLMoneyDataWrapper
 					switch (nVer)
 					{
 						case 1: //Rev.1
-							UpdateUserInfoTable1();
+							updateUserInfoTable1();
 							break;
 					}
 				}
@@ -155,7 +155,7 @@ namespace OpenSim.Data.MySQL.MySQLMoneyDataWrapper
 				{
 					try
 					{
-						CreateTransactionTable();
+						createTransactionTable();
 					}
 					catch (Exception e)
 					{
@@ -169,29 +169,29 @@ namespace OpenSim.Data.MySQL.MySQLMoneyDataWrapper
 					switch (nVer)
 					{
 						case 2: //Rev.2
-							UpdateTransactionTable2();
-							UpdateTransactionTable3();
-							UpdateTransactionTable4();
-							UpdateTransactionTable5();
-							UpdateTransactionTable6();
+							updateTransactionTable2();
+							updateTransactionTable3();
+							updateTransactionTable4();
+							updateTransactionTable5();
+							updateTransactionTable6();
 							break;
 						case 3: //Rev.3
-							UpdateTransactionTable3();
-							UpdateTransactionTable4();
-							UpdateTransactionTable5();
-							UpdateTransactionTable6();
+							updateTransactionTable3();
+							updateTransactionTable4();
+							updateTransactionTable5();
+							updateTransactionTable6();
 							break;
 						case 4: //Rev.4
-							UpdateTransactionTable4();
-							UpdateTransactionTable5();
-							UpdateTransactionTable6();
+							updateTransactionTable4();
+							updateTransactionTable5();
+							updateTransactionTable6();
 							break;
 						case 5: //Rev.5
-							UpdateTransactionTable5();
-							UpdateTransactionTable6();
+							updateTransactionTable5();
+							updateTransactionTable6();
 							break;
 						case 6: //Rev.6
-							UpdateTransactionTable6();
+							updateTransactionTable6();
 							break;
 					}
 				}
@@ -221,7 +221,7 @@ namespace OpenSim.Data.MySQL.MySQLMoneyDataWrapper
 
 
 
-		private void CreateBalanceTable()
+		private void createBalanceTable()
 		{
 			string sql = string.Empty;
 
@@ -237,7 +237,7 @@ namespace OpenSim.Data.MySQL.MySQLMoneyDataWrapper
 
 
 
-		private void CreateTransactionTable()
+		private void createTransactionTable()
 		{
 			string sql = string.Empty;
 
@@ -262,7 +262,7 @@ namespace OpenSim.Data.MySQL.MySQLMoneyDataWrapper
 
 
 
-		private void CreateUserTable()
+		private void createUserTable()
 		{
 			string sql = string.Empty;
 
@@ -283,7 +283,7 @@ namespace OpenSim.Data.MySQL.MySQLMoneyDataWrapper
 		///////////////////////////////////////////////////////////////////////
 
 		//
-		private void UpdateBalanceTable1()
+		private void updateBalanceTable1()
 		{
 			m_log.Info("[MONEY DB]: Converting Balance Table...");
 			string sql = string.Empty;
@@ -350,7 +350,7 @@ namespace OpenSim.Data.MySQL.MySQLMoneyDataWrapper
 
 
 
-		private void UpdateUserInfoTable1()
+		private void updateUserInfoTable1()
 		{
 			m_log.Info("[MONEY DB]: Converting UserInfo Table...");
 			string sql = string.Empty;
@@ -419,7 +419,7 @@ namespace OpenSim.Data.MySQL.MySQLMoneyDataWrapper
 		/// <summary>
 		/// update transaction table from Rev.2 to Rev.3
 		/// </summary>
-		private void UpdateTransactionTable2()
+		private void updateTransactionTable2()
 		{
 			string sql = string.Empty;
 
@@ -436,7 +436,7 @@ namespace OpenSim.Data.MySQL.MySQLMoneyDataWrapper
 		/// <summary>
 		/// update transaction table from Rev.3 to Rev.4
 		/// </summary>
-		private void UpdateTransactionTable3()
+		private void updateTransactionTable3()
 		{
 			string sql = string.Empty;
 
@@ -453,7 +453,7 @@ namespace OpenSim.Data.MySQL.MySQLMoneyDataWrapper
 		/// <summary>
 		/// update transaction table from Rev.4 to Rev.5
 		/// </summary>
-		private void UpdateTransactionTable4()
+		private void updateTransactionTable4()
 		{
 			string sql = string.Empty;
 
@@ -470,7 +470,7 @@ namespace OpenSim.Data.MySQL.MySQLMoneyDataWrapper
 		/// <summary>
 		/// update transaction table from Rev.5 to Rev.6
 		/// </summary>
-		private void UpdateTransactionTable5()
+		private void updateTransactionTable5()
 		{
 			string sql = string.Empty;
 
@@ -487,7 +487,7 @@ namespace OpenSim.Data.MySQL.MySQLMoneyDataWrapper
 		/// <summary>
 		/// update transaction table from Rev.6 to Rev.7
 		/// </summary>
-		private void UpdateTransactionTable6()
+		private void updateTransactionTable6()
 		{
 			m_log.Info("[MONEY DB]: Converting Transaction Table...");
 			string sql = string.Empty;
@@ -536,7 +536,7 @@ namespace OpenSim.Data.MySQL.MySQLMoneyDataWrapper
 
 		///////////////////////////////////////////////////////////////////////
 
-		private Dictionary<string,string> CheckTables()
+		private Dictionary<string,string> checkTables()
 		{
 			Dictionary<string,string> tableDic = new Dictionary<string,string>();
 			lock (dbcon)
@@ -572,7 +572,7 @@ namespace OpenSim.Data.MySQL.MySQLMoneyDataWrapper
 		/// <summary>
 		/// Reconnect to the database
 		/// </summary>
-		public void Reconnect()
+		public void reconnect()
 		{
 			m_log.Info("[MONEY DB]: Reconnecting database");
 			lock (dbcon)
@@ -623,7 +623,7 @@ namespace OpenSim.Data.MySQL.MySQLMoneyDataWrapper
 			{
 				m_log.ErrorFormat("[MoneyDB]: MySql failed to fetch balance {0}" + Environment.NewLine + e.ToString()
 															+ Environment.NewLine + "Reconnecting" + userID);
-				Reconnect();
+				reconnect();
 				return -2;
 			}
 			return retValue;
@@ -835,7 +835,7 @@ namespace OpenSim.Data.MySQL.MySQLMoneyDataWrapper
 		}
 
 
-		public bool SetTransExpired(int deadTime)
+		public bool setTransExpired(int deadTime)
 		{
 			bool bRet = false;
 			string sql = string.Empty;
@@ -868,7 +868,7 @@ namespace OpenSim.Data.MySQL.MySQLMoneyDataWrapper
 		/// <param name="userID"></param>
 		/// <param name="transactionID"></param>
 		/// <returns></returns>
-		public bool ValidateTransfer(string secureCode, UUID transactionID)
+		public bool validateTransfer(string secureCode, UUID transactionID)
 		{
 			bool bRet = false;
 			string secure = string.Empty;
@@ -899,7 +899,7 @@ namespace OpenSim.Data.MySQL.MySQLMoneyDataWrapper
 		}
 
 
-		public TransactionData FetchTransaction(UUID transactionID)
+		public TransactionData fetchTransaction(UUID transactionID)
 		{
 			TransactionData transactionData = new TransactionData();
 			transactionData.TransUUID = transactionID;
@@ -941,7 +941,7 @@ namespace OpenSim.Data.MySQL.MySQLMoneyDataWrapper
 
 
 
-		public TransactionData[] FetchTransaction(string userID, int startTime, int endTime, uint index, uint retNum)
+		public TransactionData[] fetchTransaction(string userID, int startTime, int endTime, uint index, uint retNum)
 		{
 			List<TransactionData> rows = new List<TransactionData>();
 			string sql = string.Empty;

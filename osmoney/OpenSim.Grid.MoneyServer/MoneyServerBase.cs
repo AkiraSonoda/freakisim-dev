@@ -90,15 +90,15 @@ namespace OpenSim.Grid.MoneyServer
 		}
 
 
-		public void Work()
+		public void work()
 		{
-			//m_console.Notice("Enter help for a list of commands\n");
+			// m_console.Notice("Enter help for a list of commands\n");
 
 			//The timer checks the transactions table every 60 seconds
 			Timer checkTimer = new Timer();
 			checkTimer.Interval = 60*1000;
 			checkTimer.Enabled = true;
-			checkTimer.Elapsed += new ElapsedEventHandler(CheckTransaction);
+			checkTimer.Elapsed += new ElapsedEventHandler(checkTransaction);
 			checkTimer.Start();
 
 			while (true)
@@ -111,12 +111,12 @@ namespace OpenSim.Grid.MoneyServer
 		/// <summary>
 		/// Check the transactions table, set expired transaction state to failed
 		/// </summary>
-		private void CheckTransaction(object sender, ElapsedEventArgs e)
+		private void checkTransaction(object sender, ElapsedEventArgs e)
 		{
 			long ticksToEpoch = new DateTime(1970, 1, 1).Ticks;
 			int unixEpochTime =(int) ((DateTime.Now.Ticks - ticksToEpoch )/10000000);
 			int deadTime = unixEpochTime - DEAD_TIME;
-			m_moneyDBService.SetTransExpired(deadTime);
+			m_moneyDBService.setTransExpired(deadTime);
 		}
 
 
@@ -124,7 +124,7 @@ namespace OpenSim.Grid.MoneyServer
 		{
 			m_log.Info("[MONEY SERVER]: Setup HTTP Server process");
 
-			ReadIniConfig();
+			readIniConfig();
 
 			try {
 				//HttpContextFactory.ClientCertificateValidationCallback = null;
@@ -152,7 +152,7 @@ namespace OpenSim.Grid.MoneyServer
 					m_httpServer = new BaseHttpServer(m_moneyServerPort, false);
 				}
 
-				SetupMoneyServices();
+				setupMoneyServices();
 				m_httpServer.Start();
 				base.StartupSpecific();		// OpenSim/Framework/Servers/BaseOpenSimServer.cs 
 			}
@@ -170,7 +170,7 @@ namespace OpenSim.Grid.MoneyServer
 
 
 
-		protected void ReadIniConfig()
+		protected void readIniConfig()
 		{
 			MoneyServerConfigSource moneyConfig = new MoneyServerConfigSource();
 			Config = moneyConfig.m_config;	// for base.StartupSpecific()
@@ -179,7 +179,7 @@ namespace OpenSim.Grid.MoneyServer
 				// [Startup]
 				IConfig st_config = moneyConfig.m_config.Configs["Startup"];
 				string PIDFile = st_config.GetString("PIDFile", "");
-				if (PIDFile!="") Create_PIDFile(PIDFile);
+				if (PIDFile!="") createPIDFile(PIDFile);
 
 				// [MySql]
 				IConfig db_config = moneyConfig.m_config.Configs["MySql"];
@@ -238,7 +238,7 @@ namespace OpenSim.Grid.MoneyServer
 
 
 		// added by skidz
-		protected void Create_PIDFile(string path)
+		protected void createPIDFile(string path)
 		{
 			try
 			{
@@ -256,12 +256,12 @@ namespace OpenSim.Grid.MoneyServer
 		}
 
 
-		protected virtual void SetupMoneyServices()
+		protected virtual void setupMoneyServices()
 		{
 			m_log.Info("[MONEY SERVER]: Connecting to Money Storage Server");
 
 			m_moneyDBService = new MoneyDBService();
-			m_moneyDBService.Initialise(connectionString, MAX_DB_CONNECTION);
+			m_moneyDBService.initialise(connectionString, MAX_DB_CONNECTION);
 
 			m_moneyXmlRpcModule = new MoneyXmlRpcModule();
 			m_moneyXmlRpcModule.Initialise(m_version, m_config, m_moneyDBService, this);
@@ -269,25 +269,25 @@ namespace OpenSim.Grid.MoneyServer
 		}
 
 
-		public BaseHttpServer GetHttpServer()
+		public BaseHttpServer getHttpServer()
 		{
 			return m_httpServer;
 		}
 
 
-		public Dictionary<string, string> GetSessionDic()
+		public Dictionary<string, string> getSessionDic()
 		{
 			return m_sessionDic;
 		}
 
 
-		public Dictionary<string, string> GetSecureSessionDic()
+		public Dictionary<string, string> getSecureSessionDic()
 		{
 			return m_secureSessionDic;
 		}
 
 
-		public Dictionary<string, string> GetWebSessionDic()
+		public Dictionary<string, string> getWebSessionDic()
 		{
 			return m_webSessionDic;
 		}
@@ -314,7 +314,7 @@ namespace OpenSim.Grid.MoneyServer
 			}
 		}
 
-		public void Save(string path)
+		public void save(string path)
 		{
 			m_config.Save(path);
 		}

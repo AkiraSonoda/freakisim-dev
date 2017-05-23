@@ -31,22 +31,19 @@ namespace NSL.Certificate.Tools
 		private Mono.Security.X509.X509Crl m_clientcrl  = null;
 
 
-		public NSLCertificateVerify()
-		{
+		public NSLCertificateVerify() {
 			m_chain  	= null;
 			m_cacert 	= null;
 			m_clientcrl = null;
 		}
 
 
-		public NSLCertificateVerify(string certfile)
-		{
+		public NSLCertificateVerify(string certfile) {
 			SetPrivateCA(certfile);
 		}
 
 
-		public NSLCertificateVerify(string certfile, string crlfile)
-		{
+		public NSLCertificateVerify(string certfile, string crlfile) {
 			SetPrivateCA (certfile);
 			SetPrivateCRL(crlfile);
 		}
@@ -54,6 +51,7 @@ namespace NSL.Certificate.Tools
 
 		public void SetPrivateCA(string certfile)
 	  	{
+			m_log.DebugFormat ("SetPrivateCA");
 			try {
 				m_cacert = new X509Certificate2(certfile);
 			}
