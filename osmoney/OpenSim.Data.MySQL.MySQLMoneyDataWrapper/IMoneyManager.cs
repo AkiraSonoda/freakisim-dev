@@ -27,30 +27,41 @@
 
 using System;
 using System.Collections.Generic;
+
 //using System.Linq;
 using System.Text;
 using OpenMetaverse;
 
-namespace OpenSim.Data.MySQL.MySQLMoneyDataWrapper
-{
-    public interface IMoneyManager
-    {
-        int getBalance(string userID);
-        //int getBalanceStatus(string userID);
-        //bool updateBalanceStatus(string userID,int status);
-        bool withdrawMoney(UUID transactionID,string senderID, int amount);
-        bool giveMoney(UUID transactionID,string receiverID, int amount);
-        bool addTransaction(TransactionData transaction);
-        bool updateTransactionStatus(UUID transactionID, int status,string description);
-        TransactionData fetchTransaction(UUID transactionID);
-        TransactionData[] fetchTransaction(string userID, int startTime, int endTime, uint index,uint retNum);
-        int getTransactionNum(string userID, int startTime, int endTime);
-        bool addUser(string userID, int balance, int status);
-        bool setTransExpired(int deadTime);
-        bool validateTransfer(string secureCode, UUID transactionID);
-        bool addUserInfo(UserInfo user);
-        UserInfo fetchUserInfo(string userID);
-        bool updateUserInfo(UserInfo user);
+namespace OpenSim.Data.MySQL.MySQLMoneyDataWrapper {
+	public interface IMoneyManager {
+		int getBalance(string userID);
+		//int getBalanceStatus(string userID);
+		//bool updateBalanceStatus(string userID,int status);
+		bool withdrawMoney(UUID transactionID, string senderID, int amount);
 
-    }
+		bool giveMoney(UUID transactionID, string receiverID, int amount);
+
+		bool addTransaction(TransactionData transaction);
+
+		bool updateTransactionStatus(UUID transactionID, int status, string description);
+
+		TransactionData fetchTransaction(UUID transactionID);
+
+		TransactionData[] fetchTransaction(string userID, int startTime, int endTime, uint index, uint retNum);
+
+		int getTransactionNum(string userID, int startTime, int endTime);
+
+		bool addUser(string userID, int balance, int status);
+
+		bool setTransExpired(int deadTime);
+
+		bool validateTransfer(string secureCode, UUID transactionID);
+
+		bool addUserInfo(UserInfo user);
+
+		UserInfo fetchUserInfo(string userID);
+
+		bool updateUserInfo(UserInfo user);
+
+	}
 }

@@ -27,6 +27,7 @@
 
 using System;
 using System.Collections.Generic;
+
 //using System.Linq;
 using System.Text;
 using OpenSim.Data.MySQL.MySQLMoneyDataWrapper;
@@ -35,475 +36,373 @@ using System.Reflection;
 using OpenMetaverse;
 
 
-namespace OpenSim.Grid.MoneyServer
-{
-    class MoneyDBService: IMoneyDBService
-    {
-        private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-        private string m_connect;
-        private MySQLMoneyManager m_moneyManager;
+namespace OpenSim.Grid.MoneyServer {
+	class MoneyDBService: IMoneyDBService {
+		private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+		private string m_connect;
+		private MySQLMoneyManager m_moneyManager;
 
-        // DB manager pool
-        protected Dictionary<int, MySQLSuperManager> m_dbconnections = new Dictionary<int, MySQLSuperManager>();
-        private int m_maxConnections;
-        public int m_lastConnect = 0;
+		// DB manager pool
+		protected Dictionary<int, MySQLSuperManager> m_dbconnections = new Dictionary<int, MySQLSuperManager>();
+		private int m_maxConnections;
+		public int m_lastConnect = 0;
 
 
-        public MoneyDBService(string connect) {
-            m_connect = connect;
-            initialise(m_connect,10);
-        }
+		public MoneyDBService(string connect) {
+			m_connect = connect;
+			initialise(m_connect, 10);
+		}
 
 
-        public MoneyDBService() { }
+		public MoneyDBService() {
+		}
 
 
-        public void initialise(string connectionString,int maxDBConnections) {
-			m_log.DebugFormat ("Initialise");
-            m_maxConnections = maxDBConnections;
-            if (connectionString != string.Empty)
-            {
-                m_moneyManager = new MySQLMoneyManager(connectionString);
-                //m_log.Info("Creating " + m_maxConnections + " DB connections...");
-                for (int i = 0; i < m_maxConnections; i++)
-                {
-                    //m_log.Info("Connecting to DB... [" + i + "]");
-                    MySQLSuperManager msm = new MySQLSuperManager();
-                    msm.Manager = new MySQLMoneyManager(connectionString);
-                    m_dbconnections.Add(i, msm);
-                }
-            }
-            else 
-            {
-                m_log.Error("[MONEY DB]: Connection string is null,initialise database failed");
-                throw new Exception("Failed to initialise MySql database");
-            }
-        }
+		public void initialise(string connectionString, int maxDBConnections) {
+			m_log.DebugFormat("initialise");
+			m_maxConnections = maxDBConnections;
+			if (connectionString != string.Empty) {
+				m_moneyManager = new MySQLMoneyManager(connectionString);
+				//m_log.Info("Creating " + m_maxConnections + " DB connections...");
+				for (int i = 0; i < m_maxConnections; i++) {
+					//m_log.Info("Connecting to DB... [" + i + "]");
+					MySQLSuperManager msm = new MySQLSuperManager();
+					msm.Manager = new MySQLMoneyManager(connectionString);
+					m_dbconnections.Add(i, msm);
+				}
+			} else {
+				m_log.Error("[MONEY DB]: Connection string is null,initialise database failed");
+				throw new Exception("Failed to initialise MySql database");
+			}
+		}
 
 
-        private MySQLSuperManager getLockedConnection()
-        {
-			m_log.DebugFormat ("GetLockedConnection");
-            int lockedCons = 0;
-            while (true)
-            {
-                m_lastConnect++;
+		private MySQLSuperManager getLockedConnection() {
+			m_log.DebugFormat("getLockedConnection");
+			int lockedCons = 0;
+			while (true) {
+				m_lastConnect++;
 
-                // Overflow protection
-                if (m_lastConnect == int.MaxValue)
-                    m_lastConnect = 0;
+				// Overflow protection
+				if (m_lastConnect == int.MaxValue)
+					m_lastConnect = 0;
 
-                MySQLSuperManager x = m_dbconnections[m_lastConnect % m_maxConnections];
-                if (!x.Locked)
-                {
-                    x.GetLock();
-                    return x;
-                }
+				MySQLSuperManager x = m_dbconnections[m_lastConnect % m_maxConnections];
+				if (!x.Locked) {
+					x.GetLock();
+					return x;
+				}
 
-                lockedCons++;
-                if (lockedCons > m_maxConnections)
-                {
-                    lockedCons = 0;
-                    System.Threading.Thread.Sleep(1000); // Wait some time before searching them again.
-                    m_log.Debug(
-                        "WARNING: All threads are in use. Probable cause: Something didnt release a mutex properly, or high volume of requests inbound.");
-                }
-            }
-        }
+				lockedCons++;
+				if (lockedCons > m_maxConnections) {
+					lockedCons = 0;
+					System.Threading.Thread.Sleep(1000); // Wait some time before searching them again.
+					m_log.Debug(
+						"WARNING: All threads are in use. Probable cause: Something didnt release a mutex properly, or high volume of requests inbound.");
+				}
+			}
+		}
 
 
-        public int getBalance(string userID) {
-			m_log.DebugFormat ("getBalance({1})", userID);
+		public int getBalance(string userID) {
+			m_log.DebugFormat("getBalance({0})", userID);
 
-            MySQLSuperManager dbm = getLockedConnection();
-            try
-            {
-                return dbm.Manager.getBalance(userID);
-            }
-            catch(Exception e)
-            {
-                dbm.Manager.reconnect();
-                m_log.Error(e.ToString());
-                return 0;
-            }
-            finally
-            {
-                dbm.Release();
-            }
-        }
+			MySQLSuperManager dbm = getLockedConnection();
+			try {
+				return dbm.Manager.getBalance(userID);
+			} catch (Exception e) {
+				dbm.Manager.reconnect();
+				m_log.Error(e.ToString());
+				return 0;
+			} finally {
+				dbm.Release();
+			}
+		}
 
 
-        public bool withdrawMoney(UUID transactionID, string senderID, int amount) {
-			m_log.DebugFormat ("withdrawMoney({1},{2},{3})", transactionID, senderID, amount);
+		public bool withdrawMoney(UUID transactionID, string senderID, int amount) {
+			m_log.DebugFormat("withdrawMoney({0},{1},{2})", transactionID, senderID, amount);
 				
 			MySQLSuperManager dbm = getLockedConnection();
-            try
-            {
-                return dbm.Manager.withdrawMoney(transactionID, senderID, amount);
-            }
-            catch (Exception e)
-            {
-                dbm.Manager.reconnect();
-                m_log.Error(e.ToString());
-                return false;
-            }
-            finally
-            {
-                dbm.Release();
-            }
-        }
+			try {
+				return dbm.Manager.withdrawMoney(transactionID, senderID, amount);
+			} catch (Exception e) {
+				dbm.Manager.reconnect();
+				m_log.Error(e.ToString());
+				return false;
+			} finally {
+				dbm.Release();
+			}
+		}
 
 
-        public bool giveMoney(UUID transactionID, string receiverID, int amount) {
-			m_log.DebugFormat ("giveMoney({1},{2},{3})", transactionID, receiverID, amount);
+		public bool giveMoney(UUID transactionID, string receiverID, int amount) {
+			m_log.DebugFormat("giveMoney({0},{1},{2})", transactionID, receiverID, amount);
 
-            MySQLSuperManager dbm = getLockedConnection();
-            try
-            {
-                return dbm.Manager.giveMoney(transactionID, receiverID, amount);
-            }
-            catch (Exception e)
-            {
-                dbm.Manager.reconnect();
-                m_log.Error(e.ToString());
-                return false;
-            }
-            finally
-            {
-                dbm.Release();
-            }
-        }
+			MySQLSuperManager dbm = getLockedConnection();
+			try {
+				return dbm.Manager.giveMoney(transactionID, receiverID, amount);
+			} catch (Exception e) {
+				dbm.Manager.reconnect();
+				m_log.Error(e.ToString());
+				return false;
+			} finally {
+				dbm.Release();
+			}
+		}
 
 
-        public bool addTransaction(TransactionData transaction) {
-			m_log.DebugFormat ("addTransaction(TransactionData)");
+		public bool addTransaction(TransactionData transaction) {
+			m_log.DebugFormat("addTransaction(TransactionData)");
 
-            MySQLSuperManager dbm = getLockedConnection();
-            try
-            {
-                return dbm.Manager.addTransaction(transaction);
-            }
-            catch (Exception e)
-            {
-                dbm.Manager.reconnect();
-                m_log.Error(e.ToString());
-                return false;
-            }
-            finally
-            {
-                dbm.Release();
-            }
-        }
+			MySQLSuperManager dbm = getLockedConnection();
+			try {
+				return dbm.Manager.addTransaction(transaction);
+			} catch (Exception e) {
+				dbm.Manager.reconnect();
+				m_log.Error(e.ToString());
+				return false;
+			} finally {
+				dbm.Release();
+			}
+		}
 
 
-        public bool addUser(string userID, int balance, int status) {
-			m_log.DebugFormat ("addUser({1},{2},{3})", userID,balance,status);
+		public bool addUser(string userID, int balance, int status) {
+			m_log.DebugFormat("addUser({0},{1},{2})", userID, balance, status);
 
-            MySQLSuperManager dbm = getLockedConnection();
-            try
-            {
-                return dbm.Manager.addUser(userID, balance, status);
-            }
-            catch (Exception e)
-            {
-                dbm.Manager.reconnect();
-                m_log.Error(e.ToString());
-                return false;
-            }
-            finally
-            {
-                dbm.Release();
-            }
-        }
+			MySQLSuperManager dbm = getLockedConnection();
+			try {
+				return dbm.Manager.addUser(userID, balance, status);
+			} catch (Exception e) {
+				dbm.Manager.reconnect();
+				m_log.Error(e.ToString());
+				return false;
+			} finally {
+				dbm.Release();
+			}
+		}
 
 
-        public bool updateTransactionStatus(UUID transactionID, int status, string description) {
-			m_log.DebugFormat ("updateTransactionStatus({1},{2},{3})", transactionID, status, description);
+		public bool updateTransactionStatus(UUID transactionID, int status, string description) {
+			m_log.DebugFormat("updateTransactionStatus({0},{1},{2})", transactionID, status, description);
 
-            MySQLSuperManager dbm = getLockedConnection();
-            try
-            {
-                return dbm.Manager.updateTransactionStatus(transactionID, status, description);
-            }
-            catch (Exception e)
-            {
-                dbm.Manager.reconnect();
-                m_log.Error(e.ToString());
-                return false;
-            }
-            finally
-            {
-                dbm.Release();
-            }
-        }
+			MySQLSuperManager dbm = getLockedConnection();
+			try {
+				return dbm.Manager.updateTransactionStatus(transactionID, status, description);
+			} catch (Exception e) {
+				dbm.Manager.reconnect();
+				m_log.Error(e.ToString());
+				return false;
+			} finally {
+				dbm.Release();
+			}
+		}
 
 
-        public bool setTransExpired(int deadTime) {
-			m_log.DebugFormat ("setTransExpired({})", deadTime);
+		public bool setTransExpired(int deadTime) {
+			m_log.DebugFormat("setTransExpired({0})", deadTime);
 
-            MySQLSuperManager dbm = getLockedConnection();
-            try
-            {
-                return dbm.Manager.setTransExpired(deadTime);
-            }
-            catch (Exception e)
-            {
-                dbm.Manager.reconnect();
-                m_log.Error(e.ToString());
-                return false;
-            }
-            finally
-            {
-                dbm.Release();
-            }
-        }
+			MySQLSuperManager dbm = getLockedConnection();
+			try {
+				return dbm.Manager.setTransExpired(deadTime);
+			} catch (Exception e) {
+				dbm.Manager.reconnect();
+				m_log.Error(e.ToString());
+				return false;
+			} finally {
+				dbm.Release();
+			}
+		}
 
 
-        public bool validateTransfer(string secureCode, UUID transactionID) {
-			m_log.DebugFormat ("validateTransfer({1},{2})", secureCode, transactionID);
+		public bool validateTransfer(string secureCode, UUID transactionID) {
+			m_log.DebugFormat("validateTransfer({0},{1})", secureCode, transactionID);
 
-            MySQLSuperManager dbm = getLockedConnection();
-            try
-            {
-                return dbm.Manager.validateTransfer(secureCode, transactionID);
-            }
-            catch (Exception e)
-            {
-                dbm.Manager.reconnect();
-                m_log.Error(e.ToString());
-                return false;
-            }
-            finally
-            {
-                dbm.Release();
-            }
-        }
+			MySQLSuperManager dbm = getLockedConnection();
+			try {
+				return dbm.Manager.validateTransfer(secureCode, transactionID);
+			} catch (Exception e) {
+				dbm.Manager.reconnect();
+				m_log.Error(e.ToString());
+				return false;
+			} finally {
+				dbm.Release();
+			}
+		}
 
 
-        public TransactionData fetchTransaction(UUID transactionID) {
-			m_log.DebugFormat ("fetchTransaction({1})", transactionID);
+		public TransactionData fetchTransaction(UUID transactionID) {
+			m_log.DebugFormat("fetchTransaction({0})", transactionID);
 
-            MySQLSuperManager dbm = getLockedConnection();
-            try
-            {
-                return dbm.Manager.fetchTransaction(transactionID);
-            }
-            catch (Exception e)
-            {
-                dbm.Manager.reconnect();
-                m_log.Error(e.ToString());
-                return null;
-            }
-            finally
-            {
-                dbm.Release();
-            }
-        }
+			MySQLSuperManager dbm = getLockedConnection();
+			try {
+				return dbm.Manager.fetchTransaction(transactionID);
+			} catch (Exception e) {
+				dbm.Manager.reconnect();
+				m_log.Error(e.ToString());
+				return null;
+			} finally {
+				dbm.Release();
+			}
+		}
 
 
-        public TransactionData fetchTransaction(string userID, int startTime, int endTime, int lastIndex) {
-			m_log.DebugFormat ("fetchTransaction({1},{2},{3},{4})", userID, startTime, endTime, lastIndex);
+		public TransactionData fetchTransaction(string userID, int startTime, int endTime, int lastIndex) {
+			m_log.DebugFormat("fetchTransaction({0},{1},{2},{3})", userID, startTime, endTime, lastIndex);
 
-            MySQLSuperManager dbm = getLockedConnection();
-            TransactionData[] arrTransaction;
-            try
-            {
-                if (lastIndex < 0)
-                {
-                    arrTransaction = dbm.Manager.fetchTransaction(userID, startTime, endTime, 0, 1);
-                    if (arrTransaction.Length > 0)
-                    {
-                        return arrTransaction[0];
-                    }
-                    else
-                        return null;
-                }
-                else
-                {
-                    uint index = Convert.ToUInt32(lastIndex);
-                    arrTransaction = dbm.Manager.fetchTransaction(userID, startTime, endTime, index + 1, 1);
-                    if (arrTransaction.Length > 0)
-                    {
-                        return arrTransaction[0];
-                    }
-                    else
-                        return null;
-                }
-            }
-            catch (Exception e)
-            {
-                dbm.Manager.reconnect();
-                m_log.Error(e.ToString());
-                return null;
-            }
-            finally
-            {
-                dbm.Release();
-            }
-        }
+			MySQLSuperManager dbm = getLockedConnection();
+			TransactionData[] arrTransaction;
+			try {
+				if (lastIndex < 0) {
+					arrTransaction = dbm.Manager.fetchTransaction(userID, startTime, endTime, 0, 1);
+					if (arrTransaction.Length > 0) {
+						return arrTransaction[0];
+					} else
+						return null;
+				} else {
+					uint index = Convert.ToUInt32(lastIndex);
+					arrTransaction = dbm.Manager.fetchTransaction(userID, startTime, endTime, index + 1, 1);
+					if (arrTransaction.Length > 0) {
+						return arrTransaction[0];
+					} else
+						return null;
+				}
+			} catch (Exception e) {
+				dbm.Manager.reconnect();
+				m_log.Error(e.ToString());
+				return null;
+			} finally {
+				dbm.Release();
+			}
+		}
 
 
-        public bool doTransfer(UUID transactionUUID) {
-			m_log.DebugFormat ("doTransfer({1})", transactionUUID);
+		public bool doTransfer(UUID transactionUUID) {
+			m_log.DebugFormat("doTransfer({0})", transactionUUID);
 
-            TransactionData transaction = new TransactionData();
-            transaction = fetchTransaction(transactionUUID);
-            if (transaction != null && transaction.Status == (int)Status.PENDING_STATUS)
-            {
-                int balance = getBalance(transaction.Sender);
-                //check the amount
-                if (transaction.Amount >= 0 && balance >= transaction.Amount)
-                {
-                    if (withdrawMoney(transactionUUID, transaction.Sender, transaction.Amount))
-                    {
-                        //If receiver not found, add it to DB.
-                        if (getBalance(transaction.Receiver) == -1)
-                        {
-                            addUser(transaction.Receiver, 0, (int)Status.SUCCESS_STATUS);
-                        }
-                        if (giveMoney(transactionUUID, transaction.Receiver, transaction.Amount))
-                            return true;
-                        else // give money to receiver failed.
-                        {
-                            m_log.ErrorFormat("[MONEY DB]: Give money to receiver {0} failed", transaction.Receiver);
-                            //Return money to sender
-                            if (giveMoney(transactionUUID, transaction.Sender, transaction.Amount))
-                            {
-                                m_log.ErrorFormat("[MONEY DB]: give money to receiver {0} failed but return it to sender {1} successfully",
-                                    transaction.Receiver,
-                                    transaction.Sender);
-                                updateTransactionStatus(transactionUUID,
-                                    (int)Status.FAILED_STATUS,
-                                    "give money to receiver failed but return it to sender successfully");
-                            }
-                            else
-                            {
-                                m_log.ErrorFormat("[MONEY DB]: FATAL ERROR: Money withdrawn from sender: {0}, but failed to be given to receiver {1}",
-                                    transaction.Sender, transaction.Receiver);
-                            }
-                        }
-                    }
-                    else // withdraw money failed
-                    {
-                        m_log.ErrorFormat("[MONEY DB]: Withdraw money from sender {0} failed", transaction.Sender);
-                    }
-                }
-                else // not enough balance to finish the transaction
-                {
-                    m_log.ErrorFormat("[MONEY DB]: Not enough balance for user: {0} to apply the transaction.", transaction.Sender);
-                }
-            }
-            else // Can not fetch the transaction or it has expired
-            {
-                m_log.ErrorFormat("[MONEY DB]: The transaction:{0} has expired", transactionUUID.ToString());
-            }
-            return false;
-        }
+			TransactionData transaction = new TransactionData();
+			transaction = fetchTransaction(transactionUUID);
+			if (transaction != null && transaction.Status == (int)Status.PENDING_STATUS) {
+				int balance = getBalance(transaction.Sender);
+				//check the amount
+				if (transaction.Amount >= 0 && balance >= transaction.Amount) {
+					if (withdrawMoney(transactionUUID, transaction.Sender, transaction.Amount)) {
+						//If receiver not found, add it to DB.
+						if (getBalance(transaction.Receiver) == -1) {
+							addUser(transaction.Receiver, 0, (int)Status.SUCCESS_STATUS);
+						}
+						if (giveMoney(transactionUUID, transaction.Receiver, transaction.Amount))
+							return true;
+						else { // give money to receiver failed.
+							m_log.ErrorFormat("[MONEY DB]: Give money to receiver {0} failed", transaction.Receiver);
+							//Return money to sender
+							if (giveMoney(transactionUUID, transaction.Sender, transaction.Amount)) {
+								m_log.ErrorFormat("[MONEY DB]: give money to receiver {0} failed but return it to sender {1} successfully",
+									transaction.Receiver,
+									transaction.Sender);
+								updateTransactionStatus(transactionUUID,
+									(int)Status.FAILED_STATUS,
+									"give money to receiver failed but return it to sender successfully");
+							} else {
+								m_log.ErrorFormat("[MONEY DB]: FATAL ERROR: Money withdrawn from sender: {0}, but failed to be given to receiver {1}",
+									transaction.Sender, transaction.Receiver);
+							}
+						}
+					} else { // withdraw money failed
+						m_log.ErrorFormat("[MONEY DB]: Withdraw money from sender {0} failed", transaction.Sender);
+					}
+				} else { // not enough balance to finish the transaction
+					m_log.ErrorFormat("[MONEY DB]: Not enough balance for user: {0} to apply the transaction.", transaction.Sender);
+				}
+			} else { // Can not fetch the transaction or it has expired
+				m_log.ErrorFormat("[MONEY DB]: The transaction:{0} has expired", transactionUUID.ToString());
+			}
+			return false;
+		}
 
 
 		// by Fumi.Iseki
-        public bool doAddMoney(UUID transactionUUID) {
-			m_log.DebugFormat ("doAddMoney({1})", transactionUUID);
+		public bool doAddMoney(UUID transactionUUID) {
+			m_log.DebugFormat("doAddMoney({0})", transactionUUID);
 
-            TransactionData transaction = new TransactionData();
-            transaction = fetchTransaction(transactionUUID);
+			TransactionData transaction = new TransactionData();
+			transaction = fetchTransaction(transactionUUID);
 			
-            if (transaction != null && transaction.Status == (int)Status.PENDING_STATUS)
-            {
-                //If receiver not found, add it to DB.
-                if (getBalance(transaction.Receiver)==-1)
-                {
-                    addUser(transaction.Receiver, 0, (int)Status.SUCCESS_STATUS);
-                }
-
-                if (giveMoney(transactionUUID, transaction.Receiver, transaction.Amount)) return true;
-                else // give money to receiver failed.
-                {
-                    m_log.ErrorFormat("[MONEY DB]: Add money to receiver {0} failed", transaction.Receiver);
-                    updateTransactionStatus(transactionUUID, (int)Status.FAILED_STATUS, "add money to receiver failed");
+			if (transaction != null && transaction.Status == (int)Status.PENDING_STATUS) {
+				//If receiver not found, add it to DB.
+				if (getBalance(transaction.Receiver) == -1) {
+					addUser(transaction.Receiver, 0, (int)Status.SUCCESS_STATUS);
 				}
-            }
-            else // Can not fetch the transaction or it has expired
-            {
-                m_log.ErrorFormat("[MONEY DB]: The transaction:{0} has expired", transactionUUID.ToString());
-            }
-            return false;
-        }
+
+				if (giveMoney(transactionUUID, transaction.Receiver, transaction.Amount))
+					return true;
+				else { // give money to receiver failed.
+					m_log.ErrorFormat("[MONEY DB]: Add money to receiver {0} failed", transaction.Receiver);
+					updateTransactionStatus(transactionUUID, (int)Status.FAILED_STATUS, "add money to receiver failed");
+				}
+			} else { // Can not fetch the transaction or it has expired
+				m_log.ErrorFormat("[MONEY DB]: The transaction:{0} has expired", transactionUUID.ToString());
+			}
+			return false;
+		}
 
 
-        public bool tryAddUserInfo(UserInfo user) {
-			m_log.DebugFormat ("tryAddUserInfo(UserInfo)");
+		public bool tryAddUserInfo(UserInfo user) {
+			m_log.DebugFormat("tryAddUserInfo(UserInfo)");
 
-            MySQLSuperManager dbm = getLockedConnection();
-            try
-            {
-                if (dbm.Manager.fetchUserInfo(user.UserID) != null)
-                {
-                    m_log.InfoFormat("[MONEY DB]: Found user \"{0}\", now update information", user.Avatar);
-                    if (m_moneyManager.updateUserInfo(user))
-                        return true;
-                }
-                else if (dbm.Manager.addUserInfo(user))
-                {
-                    m_log.InfoFormat("[MONEY DB]: Unable to find user \"{0}\", add it to DB successfully", user.Avatar);
-                    return true;
-                }
-                return false;
-            }
-            catch (Exception e)
-            {
-                dbm.Manager.reconnect();
-                // Fumi.Iseki
-                m_moneyManager.reconnect();
-                m_log.Error(e.ToString());
-                return false;
-            }
-            finally
-            {
-                dbm.Release();
-            }
-        }
+			MySQLSuperManager dbm = getLockedConnection();
+			try {
+				if (dbm.Manager.fetchUserInfo(user.UserID) != null) {
+					m_log.InfoFormat("[MONEY DB]: Found user \"{0}\", now update information", user.Avatar);
+					if (m_moneyManager.updateUserInfo(user))
+						return true;
+				} else if (dbm.Manager.addUserInfo(user)) {
+					m_log.InfoFormat("[MONEY DB]: Unable to find user \"{0}\", add it to DB successfully", user.Avatar);
+					return true;
+				}
+				return false;
+			} catch (Exception e) {
+				dbm.Manager.reconnect();
+				// Fumi.Iseki
+				m_moneyManager.reconnect();
+				m_log.Error(e.ToString());
+				return false;
+			} finally {
+				dbm.Release();
+			}
+		}
 
 
-        public UserInfo fetchUserInfo(string userID) {
-			m_log.DebugFormat ("fetchUserInfo({1})", userID);
+		public UserInfo fetchUserInfo(string userID) {
+			m_log.DebugFormat("fetchUserInfo({0})", userID);
 
-            MySQLSuperManager dbm = getLockedConnection();
-            try
-            {
-                return dbm.Manager.fetchUserInfo(userID);
-            }
-            catch (Exception e)
-            {
-                dbm.Manager.reconnect();
-                m_log.Error(e.ToString());
-                return null;
-            }
-            finally
-            {
-                dbm.Release();
-            }
-        }
+			MySQLSuperManager dbm = getLockedConnection();
+			try {
+				return dbm.Manager.fetchUserInfo(userID);
+			} catch (Exception e) {
+				dbm.Manager.reconnect();
+				m_log.Error(e.ToString());
+				return null;
+			} finally {
+				dbm.Release();
+			}
+		}
 
 
-        public int getTransactionNum(string userID, int startTime, int endTime) {
-			m_log.DebugFormat ("getTransactionNum({1},{2},{3})", userID, startTime, endTime);
+		public int getTransactionNum(string userID, int startTime, int endTime) {
+			m_log.DebugFormat("getTransactionNum({0},{1},{2})", userID, startTime, endTime);
 
-            MySQLSuperManager dbm = getLockedConnection();
-            try
-            {
-                return dbm.Manager.getTransactionNum(userID,startTime,endTime);
-            }
-            catch (Exception e)
-            {
-                dbm.Manager.reconnect();
-                m_log.Error(e.ToString());
-                return -1;
-            }
-            finally
-            {
-                dbm.Release();
-            }
-        }
-    }
+			MySQLSuperManager dbm = getLockedConnection();
+			try {
+				return dbm.Manager.getTransactionNum(userID, startTime, endTime);
+			} catch (Exception e) {
+				dbm.Manager.reconnect();
+				m_log.Error(e.ToString());
+				return -1;
+			} finally {
+				dbm.Release();
+			}
+		}
+	}
 }

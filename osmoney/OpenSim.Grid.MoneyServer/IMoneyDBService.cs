@@ -27,30 +27,43 @@
 
 using System;
 using System.Collections.Generic;
+
 //using System.Linq;
 using System.Text;
 using OpenMetaverse;
 using OpenSim.Data.MySQL.MySQLMoneyDataWrapper;
 
 
-namespace OpenSim.Grid.MoneyServer
-{
-    public interface IMoneyDBService
-    {
-        int getBalance(string userID);
-        bool withdrawMoney(UUID transactionID, string senderID, int amount);
-        bool giveMoney(UUID transactionID, string receiverID, int amount);
-        bool addTransaction(TransactionData transaction);
-        bool addUser(string userID, int balance, int status);
-        bool updateTransactionStatus(UUID transactionID, int status, string description);
-        bool setTransExpired(int deadTime);
-        bool validateTransfer(string secureCode, UUID transactionID);
-        TransactionData fetchTransaction(UUID transactionID);
-        TransactionData fetchTransaction(string userID, int startTime, int endTime, int lastIndex);
-        int getTransactionNum(string userID, int startTime, int endTime);
-        bool doTransfer(UUID transactionUUID);
-        bool doAddMoney(UUID transactionUUID);		// Added by Fumi.Iseki
-        bool tryAddUserInfo(UserInfo user);
-        UserInfo fetchUserInfo(string userID);
-    }
+namespace OpenSim.Grid.MoneyServer {
+	public interface IMoneyDBService {
+		int getBalance(string userID);
+
+		bool withdrawMoney(UUID transactionID, string senderID, int amount);
+
+		bool giveMoney(UUID transactionID, string receiverID, int amount);
+
+		bool addTransaction(TransactionData transaction);
+
+		bool addUser(string userID, int balance, int status);
+
+		bool updateTransactionStatus(UUID transactionID, int status, string description);
+
+		bool setTransExpired(int deadTime);
+
+		bool validateTransfer(string secureCode, UUID transactionID);
+
+		TransactionData fetchTransaction(UUID transactionID);
+
+		TransactionData fetchTransaction(string userID, int startTime, int endTime, int lastIndex);
+
+		int getTransactionNum(string userID, int startTime, int endTime);
+
+		bool doTransfer(UUID transactionUUID);
+
+		bool doAddMoney(UUID transactionUUID);
+		// Added by Fumi.Iseki
+		bool tryAddUserInfo(UserInfo user);
+
+		UserInfo fetchUserInfo(string userID);
+	}
 }

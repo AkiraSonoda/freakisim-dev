@@ -27,26 +27,22 @@
 using System;
 using System.Threading;
 
-namespace OpenSim.Data.MySQL.MySQLMoneyDataWrapper
-{
-    // This bit of code is from OpenSim.Data.MySQLSuperManager
-    public class MySQLSuperManager
-    {
-        public bool Locked;
-        private readonly Mutex m_lock = new Mutex(false);
-        public MySQLMoneyManager Manager;
-        public string Running;
+namespace OpenSim.Data.MySQL.MySQLMoneyDataWrapper {
+	// This bit of code is from OpenSim.Data.MySQLSuperManager
+	public class MySQLSuperManager {
+		public bool Locked;
+		private readonly Mutex m_lock = new Mutex(false);
+		public MySQLMoneyManager Manager;
+		public string Running;
 
-        public void GetLock()
-        {
-            Locked = true;
-            m_lock.WaitOne();
-        }
+		public void GetLock() {
+			Locked = true;
+			m_lock.WaitOne();
+		}
 
-        public void Release()
-        {
-            m_lock.ReleaseMutex();
-            Locked = false;
-        }
-    }
+		public void Release() {
+			m_lock.ReleaseMutex();
+			Locked = false;
+		}
+	}
 }

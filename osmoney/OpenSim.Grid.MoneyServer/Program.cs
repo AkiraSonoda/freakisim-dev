@@ -27,16 +27,13 @@
 
 using log4net.Config;
 
-namespace OpenSim.Grid.MoneyServer
-{
-    class Program
-    {
-        public static void Main(string[] args)
-        {
-            XmlConfigurator.Configure();
-            MoneyServerBase app = new MoneyServerBase();
-            app.Startup();
-            app.work();
-        }
-    }
+namespace OpenSim.Grid.MoneyServer {
+	class Program {
+		public static void Main(string[] args) {
+			XmlConfigurator.Configure();
+			MoneyServerBase app = new MoneyServerBase();
+			app.Startup();
+			app.work();
+		}
+	}
 }

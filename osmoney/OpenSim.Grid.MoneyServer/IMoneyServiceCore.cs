@@ -27,18 +27,20 @@
 
 using System;
 using System.Collections.Generic;
+
 //using System.Linq;
 using System.Text;
 using OpenSim.Framework.Servers;
 using OpenSim.Framework.Servers.HttpServer;
 
-namespace OpenSim.Grid.MoneyServer
-{
-    public interface IMoneyServiceCore
-    {
-        BaseHttpServer getHttpServer();
-        Dictionary<string, string> getSessionDic();
-        Dictionary<string, string> getSecureSessionDic();
-        Dictionary<string, string> getWebSessionDic();
-    }
+namespace OpenSim.Grid.MoneyServer {
+	public interface IMoneyServiceCore {
+		BaseHttpServer getHttpServer();
+
+		Dictionary<string, string> getSessionDic();
+
+		Dictionary<string, string> getSecureSessionDic();
+
+		Dictionary<string, string> getWebSessionDic();
+	}
 }

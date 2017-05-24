@@ -18,10 +18,8 @@ using Nwc.XmlRpc;
 
 
 
-namespace NSL.Network.XmlRpc 
-{
-	public class NSLXmlRpcRequest : XmlRpcRequest
-	{
+namespace NSL.Network.XmlRpc {
+	public class NSLXmlRpcRequest : XmlRpcRequest {
 		private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
 		private Encoding _encoding = new ASCIIEncoding();
@@ -30,8 +28,8 @@ namespace NSL.Network.XmlRpc
 
 
 		public NSLXmlRpcRequest() {
-	  		_params = new ArrayList();
-	  	}
+			_params = new ArrayList();
+		}
 
 
 		public NSLXmlRpcRequest(String methodName, IList parameters) {
@@ -40,14 +38,12 @@ namespace NSL.Network.XmlRpc
 		}
 
 
-		public XmlRpcResponse certSend(String url, X509Certificate2 clientCert, bool checkServerCert, Int32 timeout)
-	  	{
+		public XmlRpcResponse certSend(String url, X509Certificate2 clientCert, bool checkServerCert, Int32 timeout) {
 			m_log.InfoFormat("[MONEY NSL RPC]: XmlRpcResponse certSend: connect to {0}", url);
 
 			HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
-			if (request==null)
-			{
-				throw new XmlRpcException(XmlRpcErrorCodes.TRANSPORT_ERROR, XmlRpcErrorCodes.TRANSPORT_ERROR_MSG +": Could not create request with " + url);
+			if (request == null) {
+				throw new XmlRpcException(XmlRpcErrorCodes.TRANSPORT_ERROR, XmlRpcErrorCodes.TRANSPORT_ERROR_MSG + ": Could not create request with " + url);
 			}
 
 			request.Method = "POST";
@@ -56,8 +52,10 @@ namespace NSL.Network.XmlRpc
 			request.Timeout = timeout;
 			request.UserAgent = "NSLXmlRpcRequest";
 
-			if (clientCert!=null) request.ClientCertificates.Add(clientCert);	// 自身の証明書
-			if (!checkServerCert) request.Headers.Add("NoVerifyCert", "true");	// 相手の証明書を検証しない
+			if (clientCert != null)
+				request.ClientCertificates.Add(clientCert);	// 自身の証明書
+			if (!checkServerCert)
+				request.Headers.Add("NoVerifyCert", "true");	// 相手の証明書を検証しない
 
 			Stream stream = request.GetRequestStream();
 			XmlTextWriter xml = new XmlTextWriter(stream, _encoding);
@@ -69,8 +67,7 @@ namespace NSL.Network.XmlRpc
 			//HttpWebResponse response = (HttpWebResponse)request.GetResponse();
 			try { 
 				response = (HttpWebResponse)request.GetResponse();
-			}
-			catch (Exception ex) {
+			} catch (Exception ex) {
 				m_log.ErrorFormat("[MONEY NSL RPC]: XmlRpcResponse certSend: GetResponse Error: {0}", ex);
 			}
 			StreamReader input = new StreamReader(response.GetResponseStream());
@@ -81,6 +78,6 @@ namespace NSL.Network.XmlRpc
 			input.Close();
 			response.Close();
 			return resp;
-	  	}
+		}
 	}
 }

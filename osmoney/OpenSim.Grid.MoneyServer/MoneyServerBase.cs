@@ -33,6 +33,7 @@ using System.Net;
 using System.Net.Security;
 using System.Reflection;
 using System.Timers;
+
 //using System.Security.Authentication;
 //using System.Security.Cryptography;
 //using System.Security.Cryptography.X509Certificates;
@@ -51,21 +52,19 @@ using NSL.Certificate.Tools;
 
 
 
-namespace OpenSim.Grid.MoneyServer
-{
-	class MoneyServerBase : BaseOpenSimServer, IMoneyServiceCore
-	{
+namespace OpenSim.Grid.MoneyServer {
+	class MoneyServerBase : BaseOpenSimServer, IMoneyServiceCore {
 		private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
 		private string connectionString = string.Empty;
 		private uint m_moneyServerPort = 8008;
-		private string m_hostName = "localhost";
+		// private string m_hostName = "localhost";
 
-		private string m_certFilename	 = "";
-		private string m_certPassword	 = "";
-		private string m_cacertFilename  = "";
-		private string m_clcrlFilename	 = "";
-		private bool   m_checkClientCert = false;
+		private string m_certFilename = "";
+		private string m_certPassword = "";
+		private string m_cacertFilename = "";
+		private string m_clcrlFilename = "";
+		private bool m_checkClientCert = false;
 
 		private int DEAD_TIME;
 		private int MAX_DB_CONNECTION;
@@ -73,7 +72,8 @@ namespace OpenSim.Grid.MoneyServer
 		private MoneyXmlRpcModule m_moneyXmlRpcModule;
 		private MoneyDBService m_moneyDBService;
 
-		private NSLCertificateVerify m_certVerify = new NSLCertificateVerify();	// クライアント認証用
+		private NSLCertificateVerify m_certVerify = new NSLCertificateVerify();
+		// クライアント認証用
 
 		private Dictionary<string, string> m_sessionDic = new Dictionary<string, string>();
 		private Dictionary<string, string> m_secureSessionDic = new Dictionary<string, string>();
@@ -82,27 +82,24 @@ namespace OpenSim.Grid.MoneyServer
 		IConfig m_config;
 
 
-		public MoneyServerBase()
-		{
+		public MoneyServerBase() {
 			m_console = new LocalConsole("Money ");
 //			m_console = new CommandConsole("Money ");
 			MainConsole.Instance = m_console;
 		}
 
 
-		public void work()
-		{
+		public void work() {
 			// m_console.Notice("Enter help for a list of commands\n");
 
 			//The timer checks the transactions table every 60 seconds
 			Timer checkTimer = new Timer();
-			checkTimer.Interval = 60*1000;
+			checkTimer.Interval = 60 * 1000;
 			checkTimer.Enabled = true;
 			checkTimer.Elapsed += new ElapsedEventHandler(checkTransaction);
 			checkTimer.Start();
 
-			while (true)
-			{
+			while (true) {
 				m_console.Prompt();
 			}
 		}
@@ -111,17 +108,15 @@ namespace OpenSim.Grid.MoneyServer
 		/// <summary>
 		/// Check the transactions table, set expired transaction state to failed
 		/// </summary>
-		private void checkTransaction(object sender, ElapsedEventArgs e)
-		{
+		private void checkTransaction(object sender, ElapsedEventArgs e) {
 			long ticksToEpoch = new DateTime(1970, 1, 1).Ticks;
-			int unixEpochTime =(int) ((DateTime.Now.Ticks - ticksToEpoch )/10000000);
+			int unixEpochTime = (int)((DateTime.Now.Ticks - ticksToEpoch) / 10000000);
 			int deadTime = unixEpochTime - DEAD_TIME;
 			m_moneyDBService.setTransExpired(deadTime);
 		}
 
 
-		protected override void StartupSpecific()
-		{
+		protected override void StartupSpecific() {
 			m_log.Info("[MONEY SERVER]: Setup HTTP Server process");
 
 			readIniConfig();
@@ -130,35 +125,29 @@ namespace OpenSim.Grid.MoneyServer
 				//HttpContextFactory.ClientCertificateValidationCallback = null;
 				Type typeHttpContextFactory = typeof(HttpContextFactory);
 				FieldInfo finfo = typeHttpContextFactory.GetField("ClientCertificateValidationCallback");
-				if (finfo!=null) finfo.SetValue(new HttpContextFactory(null, 0, null), null);
+				if (finfo != null)
+					finfo.SetValue(new HttpContextFactory(null, 0, null), null);
 				
-				if (m_certFilename!="")
-				{
+				if (m_certFilename != "") {
 					m_httpServer = new BaseHttpServer(m_moneyServerPort, true, m_certFilename, m_certPassword);
 					if (m_checkClientCert) {
-						if (finfo!=null) {
+						if (finfo != null) {
 							//HttpContextFactory.ClientCertificateValidationCallback = m_certVerify.ValidateClientCertificate;
 							finfo.SetValue(new HttpContextFactory(null, 0, null), (RemoteCertificateValidationCallback)m_certVerify.ValidateClientCertificate);
 							m_log.Info("[MONEY SERVER]: Set RemoteCertificateValidationCallback");
-						}
-						else {
+						} else {
 							m_log.Error("[MONEY SERVER]: StartupSpecific: CheckClientCert is true. But this MoneyServer does not support CheckClientCert!!");
 
 						}
 					}
-				}
-				else
-				{
+				} else {
 					m_httpServer = new BaseHttpServer(m_moneyServerPort, false);
 				}
 
 				setupMoneyServices();
 				m_httpServer.Start();
 				base.StartupSpecific();		// OpenSim/Framework/Servers/BaseOpenSimServer.cs 
-			}
-
-			catch (Exception e)
-			{
+			} catch (Exception e) {
 				m_log.ErrorFormat("[MONEY SERVER]: StartupSpecific: Fail to start HTTPS process");
 				m_log.ErrorFormat("[MONEY SERVER]: StartupSpecific: Please Check Certificate File or Password. Exit");
 				m_log.ErrorFormat("[MONEY SERVER]: StartupSpecific: {0}", e);
@@ -170,8 +159,7 @@ namespace OpenSim.Grid.MoneyServer
 
 
 
-		protected void readIniConfig()
-		{
+		protected void readIniConfig() {
 			MoneyServerConfigSource moneyConfig = new MoneyServerConfigSource();
 			Config = moneyConfig.m_config;	// for base.StartupSpecific()
 
@@ -179,58 +167,56 @@ namespace OpenSim.Grid.MoneyServer
 				// [Startup]
 				IConfig st_config = moneyConfig.m_config.Configs["Startup"];
 				string PIDFile = st_config.GetString("PIDFile", "");
-				if (PIDFile!="") createPIDFile(PIDFile);
+				if (PIDFile != "")
+					createPIDFile(PIDFile);
 
 				// [MySql]
 				IConfig db_config = moneyConfig.m_config.Configs["MySql"];
-				string sqlserver  = db_config.GetString("hostname", "localhost");
-				string database   = db_config.GetString("database", "OpenSim");
-				string username   = db_config.GetString("username", "root");
-				string password   = db_config.GetString("password", "password");
-				string pooling 	  = db_config.GetString("pooling",  "false");
-				string port 	  = db_config.GetString("port", 	"3306");
-				MAX_DB_CONNECTION = db_config.GetInt   ("MaxConnection", 10);
+				string sqlserver = db_config.GetString("hostname", "localhost");
+				string database = db_config.GetString("database", "OpenSim");
+				string username = db_config.GetString("username", "root");
+				string password = db_config.GetString("password", "password");
+				string pooling = db_config.GetString("pooling", "false");
+				string port = db_config.GetString("port", "3306");
+				MAX_DB_CONNECTION = db_config.GetInt("MaxConnection", 10);
 
-				connectionString  = "Server=" + sqlserver + ";Port=" + port + ";Database=" + database + ";User ID=" +
-												username + ";Password=" + password + ";Pooling=" + pooling + ";";
+				connectionString = "Server=" + sqlserver + ";Port=" + port + ";Database=" + database + ";User ID=" +
+				username + ";Password=" + password + ";Pooling=" + pooling + ";";
 
 				// [MoneyServer]
-				m_config   = moneyConfig.m_config.Configs["MoneyServer"];
-				DEAD_TIME  = m_config.GetInt   ("ExpiredTime", 120);
-				m_hostName = m_config.GetString("HostName", "localhost");	// be not used
+				m_config = moneyConfig.m_config.Configs["MoneyServer"];
+				DEAD_TIME = m_config.GetInt("ExpiredTime", 120);
+				// m_hostName = m_config.GetString("HostName", "localhost");	// be not used
 
 				// サーバ証明書
 				m_certFilename = m_config.GetString("ServerCertFilename", "");
 				m_certPassword = m_config.GetString("ServerCertPassword", "");
-				if (m_certFilename!="") {
+				if (m_certFilename != "") {
 					m_log.Info("[MONEY SERVER]: ReadIniConfig: Execute HTTPS comunication. Cert file is " + m_certFilename);
 				}
 
 				// クライアント認証
 				string checkcert = m_config.GetString("CheckClientCert", "false");
-				if (checkcert.ToLower()=="true") m_checkClientCert = true;
+				if (checkcert.ToLower() == "true")
+					m_checkClientCert = true;
 
 				m_cacertFilename = m_config.GetString("CACertFilename", "");
-				m_clcrlFilename  = m_config.GetString("ClientCrlFilename", "");
+				m_clcrlFilename = m_config.GetString("ClientCrlFilename", "");
 				//
-				if (m_checkClientCert && m_cacertFilename!="") {
+				if (m_checkClientCert && m_cacertFilename != "") {
 					m_certVerify.SetPrivateCA(m_cacertFilename);
 					m_log.Info("[MONEY SERVER]: ReadIniConfig: Execute Authentication of Clients. CA  file is " + m_cacertFilename);
-				}
-				else {
+				} else {
 					m_checkClientCert = false;
 				}
 
 				if (m_checkClientCert) {
-					if (m_clcrlFilename!="") {
+					if (m_clcrlFilename != "") {
 						m_certVerify.SetPrivateCRL(m_clcrlFilename);
 						m_log.Info("[MONEY SERVER]: ReadIniConfig: Execute Authentication of Clients. CRL file is " + m_clcrlFilename);
 					}
 				}
-			}
-
-			catch (Exception)
-			{
+			} catch (Exception) {
 				m_log.Error("[MONEY SERVER]: ReadIniConfig: Fail to setup configure. Please check MoneyServer.ini. Exit");
 				Environment.Exit(1);
 			}
@@ -238,10 +224,8 @@ namespace OpenSim.Grid.MoneyServer
 
 
 		// added by skidz
-		protected void createPIDFile(string path)
-		{
-			try
-			{
+		protected void createPIDFile(string path) {
+			try {
 				string pidstring = System.Diagnostics.Process.GetCurrentProcess().Id.ToString();
 				FileStream fs = File.Create(path);
 				System.Text.ASCIIEncoding enc = new System.Text.ASCIIEncoding();
@@ -249,15 +233,12 @@ namespace OpenSim.Grid.MoneyServer
 				fs.Write(buf, 0, buf.Length);
 				fs.Close();
 				m_pidFile = path;
-			}
-			catch (Exception)
-			{
+			} catch (Exception) {
 			}
 		}
 
 
-		protected virtual void setupMoneyServices()
-		{
+		protected virtual void setupMoneyServices() {
 			m_log.Info("[MONEY SERVER]: Connecting to Money Storage Server");
 
 			m_moneyDBService = new MoneyDBService();
@@ -269,26 +250,22 @@ namespace OpenSim.Grid.MoneyServer
 		}
 
 
-		public BaseHttpServer getHttpServer()
-		{
+		public BaseHttpServer getHttpServer() {
 			return m_httpServer;
 		}
 
 
-		public Dictionary<string, string> getSessionDic()
-		{
+		public Dictionary<string, string> getSessionDic() {
 			return m_sessionDic;
 		}
 
 
-		public Dictionary<string, string> getSecureSessionDic()
-		{
+		public Dictionary<string, string> getSecureSessionDic() {
 			return m_secureSessionDic;
 		}
 
 
-		public Dictionary<string, string> getWebSessionDic()
-		{
+		public Dictionary<string, string> getWebSessionDic() {
 			return m_webSessionDic;
 		}
 
@@ -296,26 +273,20 @@ namespace OpenSim.Grid.MoneyServer
 
 
 
-	class MoneyServerConfigSource
-	{
+	class MoneyServerConfigSource {
 		public IniConfigSource m_config;
 
-		public MoneyServerConfigSource()
-		{
+		public MoneyServerConfigSource() {
 			string configPath = Path.Combine(Directory.GetCurrentDirectory(), "MoneyServer.ini");
-			if (File.Exists(configPath))
-			{
+			if (File.Exists(configPath)) {
 				m_config = new IniConfigSource(configPath);
-			}
-			else
-			{
+			} else {
 				//TODO: create default configuration.
 				//m_config = DefaultConfig();
 			}
 		}
 
-		public void save(string path)
-		{
+		public void save(string path) {
 			m_config.Save(path);
 		}
 
