@@ -153,8 +153,8 @@ namespace OpenSim.Grid.MoneyServer {
 
 			m_cacertFilename = m_config.GetString("CACertFilename", "");
 			if (m_cacertFilename != "") {
-				m_certVerify.SetPrivateCA(m_cacertFilename);
-				ServicePointManager.ServerCertificateValidationCallback = new RemoteCertificateValidationCallback(m_certVerify.ValidateServerCertificate);
+				m_certVerify.setPrivateCA(m_cacertFilename);
+				ServicePointManager.ServerCertificateValidationCallback = new RemoteCertificateValidationCallback(m_certVerify.validateServerCertificate);
 				m_log.Info("[MONEY RPC]: Initialise: Execute Authentication of Server. CA file is " + m_cacertFilename);
 			} else {
 				m_checkServerCert = false;
@@ -284,7 +284,7 @@ namespace OpenSim.Grid.MoneyServer {
 			}
 
 			try {
-				//m_log.InfoFormat("[MONEY RPC]: handleClientLogin: User {0} has logged in, getting balance...", clientUUID);
+				m_log.InfoFormat("[MONEY RPC]: handleClientLogin: User {0} has logged in, getting balance...", clientUUID);
 				balance = m_moneyDBService.getBalance(clientUUID);
 				//add user if not exist
 				if (balance == -1) {

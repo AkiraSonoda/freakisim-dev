@@ -71,6 +71,7 @@ namespace OpenSim.Data.MySQL.MySQLMoneyDataWrapper {
 
 
 		private void initialise(string connect) {
+			m_log.DebugFormat("initialise({0})", connect);
 			try {
 				connectString = connect;
 				dbcon = new MySqlConnection(connectString);
@@ -171,6 +172,7 @@ namespace OpenSim.Data.MySQL.MySQLMoneyDataWrapper {
 
 
 		private int getTableVersionNum(string version) {
+			m_log.DebugFormat("getTableVersionNum({0})", version);
 			int nVer = 0;
 
 			Regex _commentPattenRegex = new Regex(@"\w+\.(?<ver>\d+)");
@@ -185,6 +187,8 @@ namespace OpenSim.Data.MySQL.MySQLMoneyDataWrapper {
 
 
 		private void createBalanceTable() {
+			m_log.DebugFormat("createBalanceTable()");
+
 			string sql = string.Empty;
 
 			sql += "CREATE TABLE `" + Table_of_Balance + "`(";
@@ -200,6 +204,8 @@ namespace OpenSim.Data.MySQL.MySQLMoneyDataWrapper {
 
 
 		private void createTransactionTable() {
+			m_log.DebugFormat("createTransactionTable()");
+
 			string sql = string.Empty;
 
 			sql += "CREATE TABLE `" + Table_of_Transaction + "`(";
@@ -224,6 +230,8 @@ namespace OpenSim.Data.MySQL.MySQLMoneyDataWrapper {
 
 
 		private void createUserTable() {
+			m_log.DebugFormat("createUserTable()");
+
 			string sql = string.Empty;
 
 			sql += "CREATE TABLE `" + Table_of_UserInfo + "`(";
@@ -244,7 +252,7 @@ namespace OpenSim.Data.MySQL.MySQLMoneyDataWrapper {
 
 		//
 		private void updateBalanceTable1() {
-			m_log.Info("[MONEY DB]: Converting Balance Table...");
+			m_log.DebugFormat("updateBalanceTable1()");
 			string sql = string.Empty;
 
 			sql = "SELECT COUNT(*) FROM " + Table_of_Balance;
@@ -310,7 +318,7 @@ namespace OpenSim.Data.MySQL.MySQLMoneyDataWrapper {
 
 
 		private void updateUserInfoTable1() {
-			m_log.Info("[MONEY DB]: Converting UserInfo Table...");
+			m_log.DebugFormat("updateUserInfoTable1()");
 			string sql = string.Empty;
 
 			sql = "SELECT COUNT(*) FROM " + Table_of_UserInfo;
@@ -378,6 +386,7 @@ namespace OpenSim.Data.MySQL.MySQLMoneyDataWrapper {
 		/// update transaction table from Rev.2 to Rev.3
 		/// </summary>
 		private void updateTransactionTable2() {
+			m_log.DebugFormat("updateTransactionTable2()");
 			string sql = string.Empty;
 
 			sql += "BEGIN;";
@@ -394,6 +403,7 @@ namespace OpenSim.Data.MySQL.MySQLMoneyDataWrapper {
 		/// update transaction table from Rev.3 to Rev.4
 		/// </summary>
 		private void updateTransactionTable3() {
+			m_log.DebugFormat("updateTransactionTable3()");
 			string sql = string.Empty;
 
 			sql += "BEGIN;";
@@ -410,6 +420,7 @@ namespace OpenSim.Data.MySQL.MySQLMoneyDataWrapper {
 		/// update transaction table from Rev.4 to Rev.5
 		/// </summary>
 		private void updateTransactionTable4() {
+			m_log.DebugFormat("updateTransactionTable4()");
 			string sql = string.Empty;
 
 			sql += "BEGIN;";
@@ -426,6 +437,7 @@ namespace OpenSim.Data.MySQL.MySQLMoneyDataWrapper {
 		/// update transaction table from Rev.5 to Rev.6
 		/// </summary>
 		private void updateTransactionTable5() {
+			m_log.DebugFormat("updateTransactionTable5()");
 			string sql = string.Empty;
 
 			sql += "BEGIN;";
@@ -442,7 +454,7 @@ namespace OpenSim.Data.MySQL.MySQLMoneyDataWrapper {
 		/// update transaction table from Rev.6 to Rev.7
 		/// </summary>
 		private void updateTransactionTable6() {
-			m_log.Info("[MONEY DB]: Converting Transaction Table...");
+			m_log.DebugFormat("updateTransactionTable6()");
 			string sql = string.Empty;
 
 			sql = "SELECT COUNT(*) FROM " + Table_of_Transaction;
@@ -490,6 +502,8 @@ namespace OpenSim.Data.MySQL.MySQLMoneyDataWrapper {
 		///////////////////////////////////////////////////////////////////////
 
 		private Dictionary<string,string> checkTables() {
+			m_log.DebugFormat("checkTables()");
+
 			Dictionary<string,string> tableDic = new Dictionary<string,string>();
 			lock (dbcon) {
 				string sql = string.Empty;
@@ -519,7 +533,7 @@ namespace OpenSim.Data.MySQL.MySQLMoneyDataWrapper {
 		/// Reconnect to the database
 		/// </summary>
 		public void reconnect() {
-			m_log.Info("[MONEY DB]: Reconnecting database");
+			m_log.DebugFormat("reconnect()");
 			lock (dbcon) {
 				try {
 					dbcon.Close();
@@ -542,6 +556,8 @@ namespace OpenSim.Data.MySQL.MySQLMoneyDataWrapper {
 		/// <param name="userID"></param>
 		/// <returns></returns>
 		public int getBalance(string userID) {
+			m_log.DebugFormat("getBalance(userid: {0})", userID);
+
 			string sql = string.Empty;
 			int retValue = -1;
 			sql += "SELECT balance FROM " + Table_of_Balance + " WHERE user = ?userid";
@@ -566,6 +582,8 @@ namespace OpenSim.Data.MySQL.MySQLMoneyDataWrapper {
 
 
 		public bool updateBalance(string uuid, int amount) {
+			m_log.DebugFormat("updateBalance(uuid: {0}, amount: {1})", uuid, amount);
+
 			bool bRet = false;
 			string sql = string.Empty;
 
@@ -588,6 +606,8 @@ namespace OpenSim.Data.MySQL.MySQLMoneyDataWrapper {
 
 
 		public bool addUser(string userID, int balance, int status) {
+			m_log.DebugFormat("addUser(userid: {0}, balance: {1}, status: {2})", userID,balance,status);
+
 			bool bRet = false;
 			string sql = string.Empty;
 
@@ -610,6 +630,7 @@ namespace OpenSim.Data.MySQL.MySQLMoneyDataWrapper {
 		/// </summary>
 		/// <param name="userID"></param>
 		private void addUser(string userID) {
+			m_log.DebugFormat("addUser(userid: {0})", userID);
 			string sql = string.Empty;
 
 			sql += "INSERT INTO " + Table_of_Balance + " (`user`,`balance`,`status`) VALUES ";
@@ -631,6 +652,8 @@ namespace OpenSim.Data.MySQL.MySQLMoneyDataWrapper {
 		/// <param name="amount"></param>
 		/// <returns></returns>
 		public bool withdrawMoney(UUID transactionID, string senderID, int amount) {
+			m_log.DebugFormat("withdrawMoney(transactionID: {0}, sender: {1}, amount: {2})", transactionID,senderID,amount);
+
 			bool bRet = false;
 			string sql = string.Empty;
 
@@ -666,6 +689,8 @@ namespace OpenSim.Data.MySQL.MySQLMoneyDataWrapper {
 		/// <param name="amount"></param>
 		/// <returns></returns>
 		public bool giveMoney(UUID transactionID, string receiverID, int amount) {
+			m_log.DebugFormat("withdrawMoney(transactionID: {0}, receiverID: {1}, amount: {2})", transactionID,receiverID,amount);
+
 			string sql = string.Empty;
 			bool bRet = false;
 
@@ -699,6 +724,8 @@ namespace OpenSim.Data.MySQL.MySQLMoneyDataWrapper {
 		// transaction
 		//
 		public bool addTransaction(TransactionData transaction) {
+			m_log.DebugFormat("addTransaction(TransactionData: ...)");
+
 			bool bRet = false;
 			string sql = string.Empty;
 
@@ -733,6 +760,8 @@ namespace OpenSim.Data.MySQL.MySQLMoneyDataWrapper {
 
 
 		public bool updateTransactionStatus(UUID transactionID, int status, string description) {
+			m_log.DebugFormat("updateTransactionStatus(transactionID: {0}, status: {1}, description: {2})", transactionID,status,description);
+
 			bool bRet = false;
 			string sql = string.Empty;
 
@@ -755,6 +784,7 @@ namespace OpenSim.Data.MySQL.MySQLMoneyDataWrapper {
 
 
 		public bool setTransExpired(int deadTime) {
+			m_log.DebugFormat("setTransExpired(deadTime: {0})", deadTime);
 			bool bRet = false;
 			string sql = string.Empty;
 
@@ -785,6 +815,8 @@ namespace OpenSim.Data.MySQL.MySQLMoneyDataWrapper {
 		/// <param name="transactionID"></param>
 		/// <returns></returns>
 		public bool validateTransfer(string secureCode, UUID transactionID) {
+			m_log.DebugFormat("validateTransfer(secureCode: {0}, transactionID: {1})", secureCode,transactionID);
+
 			bool bRet = false;
 			string secure = string.Empty;
 			string sql = string.Empty;
@@ -812,6 +844,8 @@ namespace OpenSim.Data.MySQL.MySQLMoneyDataWrapper {
 
 
 		public TransactionData fetchTransaction(UUID transactionID) {
+			m_log.DebugFormat("fetchTransaction(transactionID: {0})", transactionID);
+
 			TransactionData transactionData = new TransactionData();
 			transactionData.TransUUID = transactionID;
 			string sql = string.Empty;
@@ -848,6 +882,8 @@ namespace OpenSim.Data.MySQL.MySQLMoneyDataWrapper {
 
 
 		public TransactionData[] fetchTransaction(string userID, int startTime, int endTime, uint index, uint retNum) {
+			m_log.DebugFormat("fetchTransaction(userID: {0}, startTime: {1}, endTime: {2}, index: {3}, retNum: {4})", userID,startTime,endTime,index,retNum);
+
 			List<TransactionData> rows = new List<TransactionData>();
 			string sql = string.Empty;
 
@@ -900,6 +936,7 @@ namespace OpenSim.Data.MySQL.MySQLMoneyDataWrapper {
 
 
 		public int getTransactionNum(string userID, int startTime, int endTime) {
+			m_log.DebugFormat("getTransactionNum(userID: {0}, startTime: {1}, endTime: {2}, index: {3}, retNum: {4})", userID,startTime,endTime);
 			int iRet = -1;
 			string sql = string.Empty;
 
@@ -931,6 +968,8 @@ namespace OpenSim.Data.MySQL.MySQLMoneyDataWrapper {
 		// userinfo
 		//
 		public bool addUserInfo(UserInfo userInfo) {
+			m_log.DebugFormat("addUserInfo(UserInfo: ...)");
+
 			bool bRet = false;
 			string sql = string.Empty;
 		   
@@ -960,6 +999,8 @@ namespace OpenSim.Data.MySQL.MySQLMoneyDataWrapper {
 
 
 		public UserInfo fetchUserInfo(string userID) {
+			m_log.DebugFormat("fetchUserInfo(userID: {0})", userID);
+
 			UserInfo userInfo = new UserInfo();
 			userInfo.UserID = userID;
 			string sql = string.Empty;
@@ -989,6 +1030,8 @@ namespace OpenSim.Data.MySQL.MySQLMoneyDataWrapper {
 
 
 		public bool updateUserInfo(UserInfo user) {
+			m_log.DebugFormat("updateUserInfo(UserInfo: ...)");
+
 			bool bRet = false;
 			string sql = string.Empty;
 

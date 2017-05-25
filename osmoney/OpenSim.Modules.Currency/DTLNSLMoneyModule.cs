@@ -279,12 +279,12 @@ namespace OpenSim.Modules.Currency {
 
 				m_cacertFilename = economyConfig.GetString("CACertFilename", "");
 				if (m_cacertFilename != "") {
-					m_certVerify.SetPrivateCA(m_cacertFilename);
+					m_certVerify.setPrivateCA(m_cacertFilename);
 					m_log.InfoFormat("[MONEY]: Execute Authentication of Server. CA Cert File is " + m_cacertFilename);
 				} else {
 					m_checkServerCert = false;
 				}
-				ServicePointManager.ServerCertificateValidationCallback = new RemoteCertificateValidationCallback(m_certVerify.ValidateServerCertificate);
+				ServicePointManager.ServerCertificateValidationCallback = new RemoteCertificateValidationCallback(m_certVerify.validateServerCertificate);
 
 
 				// Settlement

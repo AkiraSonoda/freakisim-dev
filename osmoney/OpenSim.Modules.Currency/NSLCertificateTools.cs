@@ -37,17 +37,17 @@ namespace NSL.Certificate.Tools {
 
 
 		public NSLCertificateVerify(string certfile) {
-			SetPrivateCA(certfile);
+			setPrivateCA(certfile);
 		}
 
 
 		public NSLCertificateVerify(string certfile, string crlfile) {
-			SetPrivateCA(certfile);
-			SetPrivateCRL(crlfile);
+			setPrivateCA(certfile);
+			setPrivateCRL(crlfile);
 		}
 
 
-		public void SetPrivateCA(string certfile) {
+		public void setPrivateCA(string certfile) {
 			m_log.DebugFormat("SetPrivateCA");
 			try {
 				m_cacert = new X509Certificate2(certfile);
@@ -65,7 +65,8 @@ namespace NSL.Certificate.Tools {
 		}
 
 
-		public void SetPrivateCRL(string crlfile) {
+		public void setPrivateCRL(string crlfile) {
+			m_log.DebugFormat("setPrivateCRL");
 			try {
 				m_clientcrl = Mono.Security.X509.X509Crl.CreateFromFile(crlfile);
 			} catch (Exception ex) {
@@ -79,7 +80,8 @@ namespace NSL.Certificate.Tools {
 		//
 		//
 		//
-		public bool CheckPrivateChain(X509Certificate2 cert) {
+		public bool checkPrivateChain(X509Certificate2 cert) {
+			m_log.DebugFormat("checkPrivateChain");
 			if (m_chain == null || m_cacert == null) {
 				return false;
 			}
@@ -109,7 +111,7 @@ namespace NSL.Certificate.Tools {
 		//
 		//
 		//
-		public bool ValidateServerCertificate(object obj, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors) {
+		public bool validateServerCertificate(object obj, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors) {
 			m_log.InfoFormat("[NSL CERT VERIFY]: ValidateServerCertificate: Policy is ({0})", sslPolicyErrors);
 
 			if (obj is HttpWebRequest) {
@@ -131,7 +133,7 @@ namespace NSL.Certificate.Tools {
 				return false;
 			}
 
-			bool valid = CheckPrivateChain(certificate2);
+			bool valid = checkPrivateChain(certificate2);
 			if (valid) {
 				m_log.InfoFormat("[NSL CERT VERIFY]: Valid Server Certification for \"{0}\"", simplename);
 			} else {
@@ -144,7 +146,7 @@ namespace NSL.Certificate.Tools {
 		//
 		//
 		// obj is SslStream
-		public bool ValidateClientCertificate(object obj, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors) {
+		public bool validateClientCertificate(object obj, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors) {
 			m_log.InfoFormat("[NSL CERT VERIFY]: ValidateClientCertificate: Policy is ({0})", sslPolicyErrors);
 
 			X509Certificate2 certificate2 = new X509Certificate2(certificate);
@@ -167,7 +169,7 @@ namespace NSL.Certificate.Tools {
 				}
 			}
 
-			bool valid = CheckPrivateChain(certificate2);
+			bool valid = checkPrivateChain(certificate2);
 			if (valid) {
 				m_log.InfoFormat("[NSL CERT VERIFY]: Valid Client Certification for \"{0}\"", simplename);
 			} else {
@@ -181,9 +183,11 @@ namespace NSL.Certificate.Tools {
 
 	//
 	public class NSLCertificatePolicy : ICertificatePolicy {
-		// private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+		private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
 		public bool CheckValidationResult(ServicePoint srvPoint, X509Certificate certificate, WebRequest request, int certificateProblem) {
+			m_log.DebugFormat("CheckValidationResult(ServicePoint,X509Certificate,WebRequest,int)");
+
 			if (certificateProblem == 0 || 				//Normal
 			    certificateProblem == -2146762487 || 	//Not trusted？
 			    certificateProblem == -2146762495 || 	//Expired

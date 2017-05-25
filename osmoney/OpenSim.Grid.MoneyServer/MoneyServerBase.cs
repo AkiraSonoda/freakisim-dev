@@ -133,7 +133,7 @@ namespace OpenSim.Grid.MoneyServer {
 					if (m_checkClientCert) {
 						if (finfo != null) {
 							//HttpContextFactory.ClientCertificateValidationCallback = m_certVerify.ValidateClientCertificate;
-							finfo.SetValue(new HttpContextFactory(null, 0, null), (RemoteCertificateValidationCallback)m_certVerify.ValidateClientCertificate);
+							finfo.SetValue(new HttpContextFactory(null, 0, null), (RemoteCertificateValidationCallback)m_certVerify.validateClientCertificate);
 							m_log.Info("[MONEY SERVER]: Set RemoteCertificateValidationCallback");
 						} else {
 							m_log.Error("[MONEY SERVER]: StartupSpecific: CheckClientCert is true. But this MoneyServer does not support CheckClientCert!!");
@@ -204,7 +204,7 @@ namespace OpenSim.Grid.MoneyServer {
 				m_clcrlFilename = m_config.GetString("ClientCrlFilename", "");
 				//
 				if (m_checkClientCert && m_cacertFilename != "") {
-					m_certVerify.SetPrivateCA(m_cacertFilename);
+					m_certVerify.setPrivateCA(m_cacertFilename);
 					m_log.Info("[MONEY SERVER]: ReadIniConfig: Execute Authentication of Clients. CA  file is " + m_cacertFilename);
 				} else {
 					m_checkClientCert = false;
@@ -212,7 +212,7 @@ namespace OpenSim.Grid.MoneyServer {
 
 				if (m_checkClientCert) {
 					if (m_clcrlFilename != "") {
-						m_certVerify.SetPrivateCRL(m_clcrlFilename);
+						m_certVerify.setPrivateCRL(m_clcrlFilename);
 						m_log.Info("[MONEY SERVER]: ReadIniConfig: Execute Authentication of Clients. CRL file is " + m_clcrlFilename);
 					}
 				}
