@@ -8,7 +8,6 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,6 +19,7 @@ public class MySQLDao {
 
 	private Connection connection = null;
 	private Statement statement = null;
+	@SuppressWarnings("unused")
 	private PreparedStatement preparedStatement = null;
 	private ResultSet resultSet = null;
 	
@@ -50,10 +50,10 @@ public class MySQLDao {
 		
 		while( resultSet.next() ) {
 			PrimDto primDto = new PrimDto();
-			primDto.dbSceneGroupUUID = UUID.fromString(resultSet.getString("SceneGroupID"));
-			primDto.dbPrimUUID = UUID.fromString(resultSet.getString("UUID"));
-			primDto.dbOwnerUUID = UUID.fromString(resultSet.getString("OwnerID"));
-			primDto.dbLastOwnerUUID = UUID.fromString(resultSet.getString("LastOwnerID"));
+			primDto.dbSceneGroupUUID = resultSet.getString("SceneGroupID");
+			primDto.dbPrimUUID = resultSet.getString("UUID");
+			primDto.dbOwnerUUID = resultSet.getString("OwnerID");
+			primDto.dbLastOwnerUUID = resultSet.getString("LastOwnerID");
 			primList.add(primDto);
 		}
 		

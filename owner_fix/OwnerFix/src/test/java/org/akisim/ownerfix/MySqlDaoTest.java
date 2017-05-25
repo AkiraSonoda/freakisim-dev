@@ -20,7 +20,7 @@ public class MySqlDaoTest {
 	public void testGetAllPrims(){ 
 		try {
 			List<PrimDto> prims = mysqlDao.getPrims("akisim.prims");
-			assertTrue(prims.size() > 0);
+			assertTrue(prims.size() == 10259);
 		} catch (Exception ex) {
 			fail("Test Failed because of exception: " + ex.getMessage());
 			ex.printStackTrace();

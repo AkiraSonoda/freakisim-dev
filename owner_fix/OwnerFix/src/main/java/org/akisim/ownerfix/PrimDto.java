@@ -1,19 +1,48 @@
 package org.akisim.ownerfix;
 
-import java.util.UUID;
 
 public class PrimDto {
 	
 	// Values to identify the prim properly
-	public UUID dbPrimUUID = UUID.fromString("00000000-0000-0000-0000-000000000000");
-	public UUID dbSceneGroupUUID = UUID.fromString("00000000-0000-0000-0000-000000000000");
+	public String dbPrimUUID = "00000000-0000-0000-0000-000000000000";
+	public String dbSceneGroupUUID = "00000000-0000-0000-0000-000000000000";
 	
 	// Values retrieved from Database
-	public UUID dbOwnerUUID = UUID.fromString("00000000-0000-0000-0000-000000000000");
-	public UUID dbLastOwnerUUID = UUID.fromString("00000000-0000-0000-0000-000000000000");
+	public String dbOwnerUUID = "00000000-0000-0000-0000-000000000000";
+	public String dbLastOwnerUUID = "00000000-0000-0000-0000-000000000000";
 	
 	// Values retrieved from XML 
-	public UUID xmlOwnerUUID = UUID.fromString("00000000-0000-0000-0000-000000000000");
-	public UUID xmlLastOwnerUUID = UUID.fromString("00000000-0000-0000-0000-000000000000");
+	private String xmlOwnerUUID = "00000000-0000-0000-0000-000000000000";
+	private String xmlLastOwnerUUID = "00000000-0000-0000-0000-000000000000";
 
+	public boolean isFoundInXml = false;
+	public boolean isOwnerIdDifferent = false;
+	public boolean isLastOwnerIdDifferent = false;
+	
+	public String getXmlOwnerUUID() {
+		return xmlOwnerUUID;
+	}
+	
+	public void setXmlOwnerUUID(String xmlOwnerUUID) {
+		this.xmlOwnerUUID = xmlOwnerUUID;
+		if(!xmlOwnerUUID.equals(dbOwnerUUID)) {
+			isOwnerIdDifferent = true;
+		} else {
+			isOwnerIdDifferent = false;		
+		}
+	}
+	
+	public String getXmlLastOwnerUUID() {
+		return xmlLastOwnerUUID;
+	}
+	
+	public void setXmlLastOwnerUUID(String xmlLastOwnerUUID) {
+		this.xmlLastOwnerUUID = xmlLastOwnerUUID;
+		if(!xmlLastOwnerUUID.equals(dbLastOwnerUUID)) {
+			isLastOwnerIdDifferent = true;			
+		} else {
+			isLastOwnerIdDifferent = false;						
+		}
+	}
+	
 }
