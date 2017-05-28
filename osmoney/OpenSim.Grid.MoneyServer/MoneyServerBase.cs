@@ -188,6 +188,9 @@ namespace OpenSim.Grid.MoneyServer {
 				DEAD_TIME = m_config.GetInt("ExpiredTime", 120);
 				// m_hostName = m_config.GetString("HostName", "localhost");	// be not used
 
+				m_moneyServerPort = (uint) m_config.GetInt("MoneyServerPort", 8008);
+				m_log.Info("[MONEY SERVER]: ReadIniConfig: MoneyServerPort: " + m_moneyServerPort);
+
 				// サーバ証明書
 				m_certFilename = m_config.GetString("ServerCertFilename", "");
 				m_certPassword = m_config.GetString("ServerCertPassword", "");
