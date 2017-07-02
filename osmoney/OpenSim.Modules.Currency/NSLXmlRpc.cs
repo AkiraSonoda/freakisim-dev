@@ -18,7 +18,7 @@ using Nwc.XmlRpc;
 
 
 
-namespace NSL.Network.XmlRpc {
+namespace org.akkisim.money {
 	public class NSLXmlRpcRequest : XmlRpcRequest {
 		private static readonly ILog m_log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 

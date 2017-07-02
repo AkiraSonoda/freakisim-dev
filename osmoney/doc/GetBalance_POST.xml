@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="us-ascii"?>
+<methodCall>
+	<methodName>GetBalance</methodName>
+	<params>
+		<param>
+			<value>
+				<struct>
+					<member>
+						<name>clientSessionID</name>
+						<value>
+							<string>8b861dac-6d7b-4d24-8cce-9e7e5478d497</string>
+						</value>
+					</member>
+					<member>
+						<name>clientSecureSessionID</name>
+						<value>
+							<string>be0d5c81-40d8-46a4-bb84-5b67a8d023cb</string>
+						</value>
+					</member>
+					<member>
+						<name>clientUUID</name>
+						<value>
+							<string>61f15ae5-85e6-4e22-b97d-d2099a93a76c</string>
+						</value>
+					</member>
+				</struct>
+			</value>
+		</param>
+	</params>
+</methodCall>

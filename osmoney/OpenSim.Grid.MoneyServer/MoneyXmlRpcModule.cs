@@ -46,7 +46,7 @@ using OpenSim.Framework.Servers.HttpServer;
 using OpenSim.Data.MySQL.MySQLMoneyDataWrapper;
 using OpenSim.Modules.Currency;
 
-using NSL.Network.XmlRpc;
+using org.akkisim.money;
 using NSL.Certificate.Tools;
 
 

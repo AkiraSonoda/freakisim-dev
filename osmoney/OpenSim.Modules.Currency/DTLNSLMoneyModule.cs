@@ -52,7 +52,7 @@ using OpenSim.Region.Framework.Interfaces;
 using OpenSim.Region.Framework.Scenes;
 
 using NSL.Certificate.Tools;
-using NSL.Network.XmlRpc;
+using org.akkisim.money;
 
 
 
@@ -1550,33 +1550,41 @@ namespace OpenSim.Modules.Currency {
 		/// <param name="method">Method to invoke</param>
 		/// <returns>Hashtable with success=>bool and other values</returns>
 		private Hashtable genericCurrencyXMLRPCRequest(Hashtable reqParams, string method) {
-			m_log.DebugFormat("[MONEY]: genericCurrencyXMLRPCRequest:");
+			m_log.DebugFormat("genericCurrencyXMLRPCRequest:");
 
 			if (reqParams.Count <= 0 || string.IsNullOrEmpty(method))
 				return null;
 
 			if (m_checkServerCert) {
 				if (!m_moneyServURL.StartsWith("https://")) {
-					m_log.InfoFormat("[MONEY]: genericCurrencyXMLRPCRequest: CheckServerCert is true, but protocol is not HTTPS. Please check INI file");
+					m_log.InfoFormat("genericCurrencyXMLRPCRequest: CheckServerCert is true, but protocol is not HTTPS. Please check INI file");
 					//return null;
 				}
 			} else {
 				if (!m_moneyServURL.StartsWith("https://") && !m_moneyServURL.StartsWith("http://")) {
-					m_log.ErrorFormat("[MONEY]: genericCurrencyXMLRPCRequest: Invalid Money Server URL: {0}", m_moneyServURL);
+					m_log.ErrorFormat("genericCurrencyXMLRPCRequest: Invalid Money Server URL: {0}", m_moneyServURL);
 					return null;
 				}
 			}
 
 
+			if (m_log.IsDebugEnabled) {
+				m_log.DebugFormat("Printing RequestParameters for Method: {0}", method);
+				foreach (DictionaryEntry dictionaryEntry in reqParams) {
+					m_log.DebugFormat("Entry with Key: {0} - value : {1}", dictionaryEntry.Key, dictionaryEntry.Value);
+				}
+			}
+
 			ArrayList arrayParams = new ArrayList();
 			arrayParams.Add(reqParams);
+
 			XmlRpcResponse moneyServResp = null;
 			try {
 				NSLXmlRpcRequest moneyModuleReq = new NSLXmlRpcRequest(method, arrayParams);
 				moneyServResp = moneyModuleReq.certSend(m_moneyServURL, m_cert, m_checkServerCert, MONEYMODULE_REQUEST_TIMEOUT);
 			} catch (Exception ex) {
-				m_log.ErrorFormat("[MONEY]: genericCurrencyXMLRPCRequest: Unable to connect to Money Server {0}", m_moneyServURL);
-				m_log.ErrorFormat("[MONEY]: genericCurrencyXMLRPCRequest: {0}", ex);
+				m_log.ErrorFormat("genericCurrencyXMLRPCRequest: Unable to connect to Money Server {0}", m_moneyServURL);
+				m_log.ErrorFormat("genericCurrencyXMLRPCRequest: {0}", ex);
 
 				Hashtable ErrorHash = new Hashtable();
 				ErrorHash["success"] = false;
@@ -1594,6 +1602,14 @@ namespace OpenSim.Modules.Currency {
 			}
 
 			Hashtable moneyRespData = (Hashtable)moneyServResp.Value;
+
+			if (m_log.IsDebugEnabled) {
+				m_log.DebugFormat("Printing Results of the XMLRPC Request for Method: {0}", method);
+				foreach (DictionaryEntry dictionaryEntry in moneyRespData) {
+					m_log.DebugFormat("Entry with Key: {0} - value : {1}", dictionaryEntry.Key, dictionaryEntry.Value);
+				}
+			}
+
 			return moneyRespData;
 		}
 
