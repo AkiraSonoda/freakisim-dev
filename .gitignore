@@ -8,8 +8,8 @@
 *.mds
 *.pdb
 *.pidb
-*.dll.build
-*.dll
+# *.dll.build
+# *.dll
 
 # Ignore .user and .suo files as these are user preference specific
 # http://stackoverflow.com/questions/72298/should-i-add-the-visual-studio-suo-and-user-files-to-source-control
@@ -108,5 +108,6 @@ doc/doxygen.error.log
 /*.tmp
 /FreAkiSim.sln
 /FreAkiSim.userprefs
-
 *.oar
+
+osmoney/bin/
