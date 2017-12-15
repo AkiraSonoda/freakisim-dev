@@ -53,7 +53,8 @@ using OpenSim.Region.Framework.Scenes;
 
 using NSL.Certificate.Tools;
 using org.akkisim.money;
-
+using RestSharp;
+using RestSharp.Deserializers;
 
 
 [assembly: Addin("DTLNSLMoneyModule", "1.0")]
@@ -95,7 +96,6 @@ namespace OpenSim.Modules.Currency {
 		// Stipend Credits
 		StipendPayment = 10000
 	}
-
 
 	/*
 	public enum OpenMetaverse.MoneyTransactionType : int
@@ -224,7 +224,11 @@ namespace OpenSim.Modules.Currency {
 		private float TeleportPriceExponent = 0f;
 		private float EnergyEfficiency = 0f;
 
-		#endregion
+        private JsonDeserializer jsonDeserializer = new JsonDeserializer();
+        private Dictionary<string,string> tokens = new Dictionary<string,string>();
+        private RestClient restClient = null;
+		
+        #endregion
 
 
 		//
@@ -308,7 +312,7 @@ namespace OpenSim.Modules.Currency {
 				TeleportMinPrice = economyConfig.GetInt("TeleportMinPrice", 2);
 				TeleportPriceExponent = economyConfig.GetFloat("TeleportPriceExponent", 2f);
 				EnergyEfficiency = economyConfig.GetFloat("EnergyEfficiency", 1);
-
+                restClient = new RestClient(m_moneyServURL);
 			} catch {
 				m_log.ErrorFormat("[MONEY]: Initialise: Faile to read configuration file");
 			}
@@ -1224,15 +1228,15 @@ namespace OpenSim.Modules.Currency {
 				paramTable["description"] = description;
 
 				// Generate the request for transfer.
-				Hashtable resultTable = genericCurrencyXMLRPCRequest(paramTable, "TransferMoney");
+				// TODO Hashtable resultTable = genericCurrencyXMLRPCRequest(paramTable, "TransferMoney");
 
 				// Handle the return values from Money Server.
-				if (resultTable != null && resultTable.Contains("success")) {
-					if ((bool)resultTable["success"] == true) {
-						ret = true;
-					}
-				} else
-					m_log.ErrorFormat("[MONEY]: TransferMoney: Can not money transfer request from [{0}] to [{1}]", sender.ToString(), receiver.ToString());
+				// TODO if (resultTable != null && resultTable.Contains("success")) {
+				// TODO 	if ((bool)resultTable["success"] == true) {
+				// TODO 		ret = true;
+				// TODO	}
+				// TODO } else
+				// TODDO	m_log.ErrorFormat("[MONEY]: TransferMoney: Can not money transfer request from [{0}] to [{1}]", sender.ToString(), receiver.ToString());
 			}
 			//else m_log.ErrorFormat("[MONEY]: TransferMoney: Money Server is not available!!");
 
@@ -1273,15 +1277,15 @@ namespace OpenSim.Modules.Currency {
 				paramTable["description"] = description;
 
 				// Generate the request for transfer.
-				Hashtable resultTable = genericCurrencyXMLRPCRequest(paramTable, "ForceTransferMoney");
+				// TODO Hashtable resultTable = genericCurrencyXMLRPCRequest(paramTable, "ForceTransferMoney");
 
 				// Handle the return values from Money Server.
-				if (resultTable != null && resultTable.Contains("success")) {
-					if ((bool)resultTable["success"] == true) {
-						ret = true;
-					}
-				} else
-					m_log.ErrorFormat("[MONEY]: ForceTransferMoney: Can not money force transfer request from [{0}] to [{1}]", sender.ToString(), receiver.ToString());
+				// TODO if (resultTable != null && resultTable.Contains("success")) {
+				// TODO	if ((bool)resultTable["success"] == true) {
+				// TODO		ret = true;
+				// TODO	}
+				// TODO } else
+				// TODO	m_log.ErrorFormat("[MONEY]: ForceTransferMoney: Can not money force transfer request from [{0}] to [{1}]", sender.ToString(), receiver.ToString());
 			}
 			//else m_log.ErrorFormat("[MONEY]: ForceTransferMoney: Money Server is not available!!");
 
@@ -1317,22 +1321,22 @@ namespace OpenSim.Modules.Currency {
 				paramTable["description"] = "Add Money to Avatar";
 
 				// Generate the request for transfer.
-				Hashtable resultTable = genericCurrencyXMLRPCRequest(paramTable, "AddBankerMoney");
+				// TODO Hashtable resultTable = genericCurrencyXMLRPCRequest(paramTable, "AddBankerMoney");
 
 				// Handle the return values from Money Server.
-				if (resultTable != null) {
-					if (resultTable.Contains("success") && (bool)resultTable["success"] == true) {
-						ret = true;
-					} else {
-						if (resultTable.Contains("banker")) {
-							m_settle_user = !(bool)resultTable["banker"]; // If avatar is not banker, Web Settlement is used.
-							if (m_settle_user && m_use_web_settle)
-								m_log.ErrorFormat("[MONEY]: AddBankerMoney: Avatar is not Banker. Web Settlemrnt is used.");
-						} else
-							m_log.ErrorFormat("[MONEY]: AddBankerMoney: Fail Message {0}", resultTable["message"]);
-					}
-				} else
-					m_log.ErrorFormat("[MONEY]: AddBankerMoney: Money Server is not responce");
+				// TODO if (resultTable != null) {
+				// TODO 	if (resultTable.Contains("success") && (bool)resultTable["success"] == true) {
+				// TODO		ret = true;
+				// TODO	} else {
+				// TODO		if (resultTable.Contains("banker")) {
+				// TODO			m_settle_user = !(bool)resultTable["banker"]; // If avatar is not banker, Web Settlement is used.
+				// TODO			if (m_settle_user && m_use_web_settle)
+				// TODO				m_log.ErrorFormat("[MONEY]: AddBankerMoney: Avatar is not Banker. Web Settlemrnt is used.");
+				// TODO		} else
+				// TODO			m_log.ErrorFormat("[MONEY]: AddBankerMoney: Fail Message {0}", resultTable["message"]);
+				// TODO	}
+				// TODO } else
+				// TODO	m_log.ErrorFormat("[MONEY]: AddBankerMoney: Money Server is not responce");
 			}
 			//else m_log.ErrorFormat("[MONEY]: AddBankerMoney: Money Server is not available!!");
 
@@ -1365,16 +1369,16 @@ namespace OpenSim.Modules.Currency {
 				paramTable["description"] = "Bonus to Avatar";
 
 				// Generate the request for transfer.
-				Hashtable resultTable = genericCurrencyXMLRPCRequest(paramTable, "SendMoneyBalance");
+				// TODO Hashtable resultTable = genericCurrencyXMLRPCRequest(paramTable, "SendMoneyBalance");
 
 				// Handle the return values from Money Server.
-				if (resultTable != null && resultTable.Contains("success")) {
-					if ((bool)resultTable["success"] == true) {
-						ret = true;
-					} else
-						m_log.ErrorFormat("[MONEY]: SendMoneyBalance: Fail Message is {0}", resultTable["message"]);
-				} else
-					m_log.ErrorFormat("[MONEY]: SendMoneyBalance: Money Server is not responce");
+				// TODO if (resultTable != null && resultTable.Contains("success")) {
+				// TODO	if ((bool)resultTable["success"] == true) {
+				// TODO		ret = true;
+				// TODO	} else
+				// TODO		m_log.ErrorFormat("[MONEY]: SendMoneyBalance: Fail Message is {0}", resultTable["message"]);
+				// TODO } else
+				// TODO	m_log.ErrorFormat("[MONEY]: SendMoneyBalance: Money Server is not responce");
 			}
 			//else m_log.ErrorFormat("[MONEY]: SendMoneyBalance: Money Server is not available!!");
 
@@ -1423,15 +1427,15 @@ namespace OpenSim.Modules.Currency {
 				paramTable["description"] = description;
 
 				// Generate the request for transfer.
-				Hashtable resultTable = genericCurrencyXMLRPCRequest(paramTable, "PayMoneyCharge");
+				// TODO Hashtable resultTable = genericCurrencyXMLRPCRequest(paramTable, "PayMoneyCharge");
 
 				// Handle the return values from Money Server.
-				if (resultTable != null && resultTable.Contains("success")) {
-					if ((bool)resultTable["success"] == true) {
-						ret = true;
-					}
-				} else
-					m_log.ErrorFormat("[MONEY]: PayMoneyCharge: Can not pay money of charge request from [{0}]", sender.ToString());
+				// TODO if (resultTable != null && resultTable.Contains("success")) {
+				// TODO	if ((bool)resultTable["success"] == true) {
+				// TODO		ret = true;
+				// TODO	}
+				// TODO } else
+				// TODO 	m_log.ErrorFormat("[MONEY]: PayMoneyCharge: Can not pay money of charge request from [{0}]", sender.ToString());
 			}
 			//else m_log.ErrorFormat("[MONEY]: PayMoneyCharge: Money Server is not available!!");
 
@@ -1452,7 +1456,7 @@ namespace OpenSim.Modules.Currency {
 		/// return true, if successfully.
 		/// </returns>
 		private bool LoginMoneyServer(IClientAPI client, out int balance) {
-			m_log.DebugFormat("[MONEY]: LoginMoneyServer:");
+			m_log.DebugFormat("LoginMoneyServer:");
 
 			bool ret = false;
 			balance = 0;
@@ -1465,41 +1469,152 @@ namespace OpenSim.Modules.Currency {
 			if (!string.IsNullOrEmpty(m_moneyServURL)) {
 				// Get the username for the login user.
 				if (client.Scene is Scene) {
-					if (scene != null) {
-						UserAccount account = scene.UserAccountService.GetUserAccount(scene.RegionInfo.ScopeID, client.AgentId);
-						if (account != null) {
-							userName = account.FirstName + " " + account.LastName;
-						}
-					}
+                    if (scene != null) {
+                        UserAccount account = scene.UserAccountService.GetUserAccount(scene.RegionInfo.ScopeID, client.AgentId);
+                        if (account != null) {
+                            userName = account.FirstName + " " + account.LastName;
+                        } else {
+                            m_log.Debug("LoginMoneyServer - User Account is null");
+                        }
+                    } else {
+                        m_log.Debug("LoginMoneyServer - Scene is null");
+                    }
 				}
 
-				// Login the Money Server.
-				Hashtable paramTable = new Hashtable();
-				paramTable["openSimServIP"] = scene.RegionInfo.ServerURI.Replace(scene.RegionInfo.InternalEndPoint.Port.ToString(),
-					scene.RegionInfo.HttpPort.ToString());
-				paramTable["userName"] = userName;
-				paramTable["clientUUID"] = client.AgentId.ToString();
-				paramTable["clientSessionID"] = client.SessionId.ToString();
-				paramTable["clientSecureSessionID"] = client.SecureSessionId.ToString();
+                // Check if User already exists on money Server
+                UserInfo userinfo = null;
+                var getUserRequest = new RestRequest("rest/userinfo/" + client.AgentId, Method.GET);
+                getUserRequest.RequestFormat = DataFormat.Json;
+                m_log.Debug("LoginMoneyServer - Getting User Information");
+                var getUserResponse = restClient.Execute(getUserRequest);
+                if (getUserResponse.StatusCode == HttpStatusCode.OK) {
+                    if(getUserResponse.ContentLength != 0) {
+                        // We got some UserInfo
+                        m_log.Debug("LoginMoneyServer - Getting User Information - Status 200: Length > 0");
+                        userinfo = jsonDeserializer.Deserialize<UserInfo>(getUserResponse);
+                        if (m_log.IsDebugEnabled) {
+                            m_log.DebugFormat("Avatar Name: {0}", userinfo.avatarName);
+                            m_log.DebugFormat("Avatar UUID: {0}", userinfo.avatarUUID);
+                            m_log.DebugFormat("SessionId  : {0}", userinfo.sessionId);
+                            m_log.DebugFormat("SeSessionId: {0}", userinfo.secureSessionId);
+                        }
+                    } else {
+                        m_log.Debug("LoginMoneyServer - Getting User Information - Status 200: Length == 0");
+                        // We didn't get UserInfo we'll create a new User on the Money Server
+                        userinfo = new UserInfo();
+                        userinfo.simAddress = scene.RegionInfo.ServerURI.Replace(scene.RegionInfo.InternalEndPoint.Port.ToString(),
+                                              scene.RegionInfo.HttpPort.ToString());
+                        userinfo.avatarName = userName;
+                        userinfo.avatarUUID = client.AgentId.ToString();
+                        userinfo.sessionId = client.SessionId.ToString();
+                        userinfo.secureSessionId = client.SecureSessionId.ToString();
+                        var createUserRequest = new RestRequest("rest/userinfo/", Method.POST);
+                        createUserRequest.RequestFormat = DataFormat.Json;
+                        createUserRequest.AddBody(userinfo);
+                        m_log.Debug("LoginMoneyServer - Creating User Information");
 
-				// Generate the request for transfer.
-				Hashtable resultTable = genericCurrencyXMLRPCRequest(paramTable, "ClientLogin");
+                        var createUserResponse = restClient.Execute(createUserRequest);
+                        if (createUserResponse.StatusCode == HttpStatusCode.OK) {
+                            m_log.DebugFormat("Nunber of users created: {0}", createUserResponse.Content);
+                        }
+                        else {
+                            m_log.ErrorFormat("Failed to create User {0} on the money Server", userName);
+                            return (ret);
+                        }
+                    }
+                } else {
+                    m_log.ErrorFormat("Failed to read User-info for {0} on the money Server", client.AgentId);
+                    return (ret);
+                }
 
-				// Handle the return result
-				if (resultTable != null && resultTable.Contains("success")) {
-					if ((bool)resultTable["success"] == true) {
-						balance = (int)resultTable["clientBalance"];
-						m_log.InfoFormat("[MONEY]: LoginMoneyServer: Client [{0}] login Money Server {1}", client.AgentId.ToString(), m_moneyServURL);
-						ret = true;
-					}
-				} else
-					m_log.ErrorFormat("[MONEY]: LoginMoneyServer: Unable to login Money Server {0} for client [{1}]", m_moneyServURL, client.AgentId.ToString());
+                // Get a Token
+                var getTokenRequest = new RestRequest("rest/userinfo/" + client.AgentId +"/token", Method.POST);
+                getTokenRequest.RequestFormat = DataFormat.Json;
+                getTokenRequest.AddBody(userinfo);
+                m_log.Debug("LoginMoneyServer - Token for User Information");
+                var getTokenResponse = restClient.Execute(getTokenRequest);
+                if (getTokenResponse.StatusCode == HttpStatusCode.OK){
+                    Token requestToken = jsonDeserializer.Deserialize<Token>(getTokenResponse);
+                    m_log.DebugFormat("Token returned: {0}", requestToken.token);
+                    this.tokens.Add(client.AgentId.ToString(), requestToken.token);
+                } else {
+                    m_log.ErrorFormat("Failed to create Token for {0} on the money Server", client.AgentId);
+                }
+
+
+                // Check if there is already a balance for the user. if not create one
+                var balancerequest = new RestRequest("rest/balances/"+client.AgentId.ToString(), Method.GET);
+                balancerequest.AddHeader("token", tokens[client.AgentId.ToString()]);
+                m_log.Debug("LoginMoneyServer - Balance for User Information");
+                var balanceresponse = restClient.Execute(balancerequest);
+                if (balanceresponse.StatusCode == HttpStatusCode.OK) {
+                    if (!balanceresponse.Content.Equals("null")) {
+                        m_log.DebugFormat("Balance found: {0}", balanceresponse.Content);
+                        Balance balanceStruct = jsonDeserializer.Deserialize<Balance>(balanceresponse);
+                        if (m_log.IsDebugEnabled) {
+                            m_log.DebugFormat("Avatar UUID: {0}", balanceStruct.avatarUUID);
+                            m_log.DebugFormat("Balance    : {0}", balanceStruct.balance);
+                            m_log.DebugFormat("SeSessionId: {0}", balanceStruct.status);
+                        }
+                        balance = balanceStruct.balance;
+                        m_log.DebugFormat("Balance found - balance returned: {0}", balanceStruct.balance);
+                        ret = true;
+                    } else {
+                        m_log.Debug("Balance not found - inserting new Balance");
+                        Balance balanceInsert = new Balance();
+                        balanceInsert.avatarUUID = userinfo.avatarUUID;
+                        balanceInsert.balance = 0;
+                        balanceInsert.status = 0;
+                        var balanceInsertRequest = new RestRequest("rest/balances", Method.POST);
+                        balanceInsertRequest.RequestFormat = DataFormat.Json;
+                        balanceInsertRequest.AddBody(balanceInsert);
+                        balanceInsertRequest.AddHeader("token", tokens[client.AgentId.ToString()]);
+
+                        var balanceInsertResponse = restClient.Execute(balanceInsertRequest);
+
+                        if (balanceInsertResponse.StatusCode == HttpStatusCode.OK) {
+                            int x = 0;
+                            Int32.TryParse(balanceInsertResponse.Content, out x);
+                            m_log.DebugFormat("{0} Balance inserted for avataruuid: {1}", x, userinfo.avatarUUID);
+                            ret = true;
+                        } else {
+                            m_log.ErrorFormat("Failed to insert Balance for avatarUUID {0} to the money Server . http-status-code: {1}", userinfo.avatarUUID, balanceInsertResponse.StatusCode);
+                            return (ret);
+                        }
+                    }
+                } else {
+                    m_log.ErrorFormat("Failed to get Balance for avatarUUID {0} to the money Server . http-status-code: {1}", userinfo.avatarUUID, balanceresponse.StatusCode);
+                    return (ret);
+                }
+
+                // Login the Money Server.
+                // Hashtable paramTable = new Hashtable();
+                // paramTable["openSimServIP"] = scene.RegionInfo.ServerURI.Replace(scene.RegionInfo.InternalEndPoint.Port.ToString(),
+                //	scene.RegionInfo.HttpPort.ToString());
+                // paramTable["userName"] = userName;
+                // paramTable["clientUUID"] = client.AgentId.ToString();
+                // paramTable["clientSessionID"] = client.SessionId.ToString();
+                // paramTable["clientSecureSessionID"] = client.SecureSessionId.ToString();
+
+                // Generate the request for transfer.
+                // Hashtable resultTable = genericCurrencyXMLRPCRequest(paramTable, "ClientLogin");
+
+                // Handle the return result
+                // if (resultTable != null && resultTable.Contains("success")) {
+                //	if ((bool)resultTable["success"] == true) {
+                //		balance = (int)resultTable["clientBalance"];
+                //		m_log.InfoFormat("[MONEY]: LoginMoneyServer: Client [{0}] login Money Server {1}", client.AgentId.ToString(), m_moneyServURL);
+                //		ret = true;
+                //	}
+                //
+				// } else
+				//	m_log.ErrorFormat("[MONEY]: LoginMoneyServer: Unable to login Money Server {0} for client [{1}]", m_moneyServURL, client.AgentId.ToString());
 			} else
 				m_log.ErrorFormat("[MONEY]: LoginMoneyServer: Money Server is not available!!");
 
 			#endregion
 
-			// Viewerへ設定を通知する．
+			// Viewer Notify Settings．
 			OnEconomyDataRequest(client);
 
 			return ret;
@@ -1522,19 +1637,38 @@ namespace OpenSim.Modules.Currency {
 			bool ret = false;
 
 			if (!string.IsNullOrEmpty(m_moneyServURL)) {
-				// Log off from the Money Server.
-				Hashtable paramTable = new Hashtable();
-				paramTable["clientUUID"] = client.AgentId.ToString();
-				paramTable["clientSessionID"] = client.SessionId.ToString();
-				paramTable["clientSecureSessionID"] = client.SecureSessionId.ToString();
+                // Log off from the Money Server.
+                ClientLogout clientLogout = new ClientLogout();
+				clientLogout.avatarUUID = client.AgentId.ToString();
+                clientLogout.sessionId = client.SessionId.ToString();
+                clientLogout.secureSessionId = client.SecureSessionId.ToString();
 
-				// Generate the request for transfer.
-				Hashtable resultTable = genericCurrencyXMLRPCRequest(paramTable, "ClientLogout");
-				// Handle the return result
-				if (resultTable != null && resultTable.Contains("success")) {
-					if ((bool)resultTable["success"] == true) {
-						ret = true;
-					}
+                var request = new RestRequest("rest/userinfo/"+client.AgentId, Method.POST);
+                request.RequestFormat = DataFormat.Json;
+                request.AddBody(clientLogout);
+                request.AddHeader("token", tokens[client.AgentId.ToString()]);
+                var response = restClient.Execute(request);
+
+                if(response.StatusCode == HttpStatusCode.OK) {
+                    ModifiedRows modifiedRows = jsonDeserializer.Deserialize<ModifiedRows>(response);
+                    if (modifiedRows.modifiedRows == 1)
+                    {
+                        m_log.Debug("Logout Succesful");
+                        // Delete the Token in the Dictionary
+                        tokens.Remove(client.AgentId.ToString());
+                        ret = true;
+                    }
+                    else {
+                        m_log.ErrorFormat("Logout not Successful: Modified Rows:{0}", modifiedRows.modifiedRows);
+                    }
+
+                    // Generate the request for transfer.
+				    // Hashtable resultTable = genericCurrencyXMLRPCRequest(paramTable, "ClientLogout");
+				    // Handle the return result
+				    // if (resultTable != null && resultTable.Contains("success")) {
+				    // 	if ((bool)resultTable["success"] == true) {
+				    //		ret = true;
+				    //	}
 				}
 			}
 
@@ -1543,109 +1677,37 @@ namespace OpenSim.Modules.Currency {
 
 
 
-		/// <summary>
-		/// Generic XMLRPC client abstraction
-		/// </summary>
-		/// <param name="ReqParams">Hashtable containing parameters to the method</param>
-		/// <param name="method">Method to invoke</param>
-		/// <returns>Hashtable with success=>bool and other values</returns>
-		private Hashtable genericCurrencyXMLRPCRequest(Hashtable reqParams, string method) {
-			m_log.DebugFormat("genericCurrencyXMLRPCRequest:");
-
-			if (reqParams.Count <= 0 || string.IsNullOrEmpty(method))
-				return null;
-
-			if (m_checkServerCert) {
-				if (!m_moneyServURL.StartsWith("https://")) {
-					m_log.InfoFormat("genericCurrencyXMLRPCRequest: CheckServerCert is true, but protocol is not HTTPS. Please check INI file");
-					//return null;
-				}
-			} else {
-				if (!m_moneyServURL.StartsWith("https://") && !m_moneyServURL.StartsWith("http://")) {
-					m_log.ErrorFormat("genericCurrencyXMLRPCRequest: Invalid Money Server URL: {0}", m_moneyServURL);
-					return null;
-				}
-			}
-
-
-			if (m_log.IsDebugEnabled) {
-				m_log.DebugFormat("Printing RequestParameters for Method: {0}", method);
-				foreach (DictionaryEntry dictionaryEntry in reqParams) {
-					m_log.DebugFormat("Entry with Key: {0} - value : {1}", dictionaryEntry.Key, dictionaryEntry.Value);
-				}
-			}
-
-			ArrayList arrayParams = new ArrayList();
-			arrayParams.Add(reqParams);
-
-			XmlRpcResponse moneyServResp = null;
-			try {
-				NSLXmlRpcRequest moneyModuleReq = new NSLXmlRpcRequest(method, arrayParams);
-				moneyServResp = moneyModuleReq.certSend(m_moneyServURL, m_cert, m_checkServerCert, MONEYMODULE_REQUEST_TIMEOUT);
-			} catch (Exception ex) {
-				m_log.ErrorFormat("genericCurrencyXMLRPCRequest: Unable to connect to Money Server {0}", m_moneyServURL);
-				m_log.ErrorFormat("genericCurrencyXMLRPCRequest: {0}", ex);
-
-				Hashtable ErrorHash = new Hashtable();
-				ErrorHash["success"] = false;
-				ErrorHash["errorMessage"] = "Unable to manage your money at this time. Purchases may be unavailable";
-				ErrorHash["errorURI"] = "";
-				return ErrorHash;
-			}
-
-			if (moneyServResp.IsFault) {
-				Hashtable ErrorHash = new Hashtable();
-				ErrorHash["success"] = false;
-				ErrorHash["errorMessage"] = "Unable to manage your money at this time. Purchases may be unavailable";
-				ErrorHash["errorURI"] = "";
-				return ErrorHash;
-			}
-
-			Hashtable moneyRespData = (Hashtable)moneyServResp.Value;
-
-			if (m_log.IsDebugEnabled) {
-				m_log.DebugFormat("Printing Results of the XMLRPC Request for Method: {0}", method);
-				foreach (DictionaryEntry dictionaryEntry in moneyRespData) {
-					m_log.DebugFormat("Entry with Key: {0} - value : {1}", dictionaryEntry.Key, dictionaryEntry.Value);
-				}
-			}
-
-			return moneyRespData;
-		}
-
-
 
 		private int QueryBalanceFromMoneyServer(IClientAPI client) {
 			m_log.DebugFormat("[MONEY]: QueryBalanceFromMoneyServer:");
 
 			int balance = 0;
 
-			#region Send the request to get the balance from money server for cilent.
-
 			if (client != null) {
 				if (m_enable_server) {
-					Hashtable paramTable = new Hashtable();
-					paramTable["clientUUID"] = client.AgentId.ToString();
-					paramTable["clientSessionID"] = client.SessionId.ToString();
-					paramTable["clientSecureSessionID"] = client.SecureSessionId.ToString();
+                    var request = new RestRequest("rest/balances/" + client.AgentId, Method.GET);
+                    request.RequestFormat = DataFormat.Json;
+                    request.AddHeader("token", tokens[client.AgentId.ToString()]);
 
-					// Generate the request for transfer.
-					Hashtable resultTable = genericCurrencyXMLRPCRequest(paramTable, "GetBalance");
+                    var response = restClient.Execute(request);
 
-					// Handle the return result
-					if (resultTable != null && resultTable.Contains("success")) {
-						if ((bool)resultTable["success"] == true) {
-							balance = (int)resultTable["clientBalance"];
-						}
-					}
+                    if (response.StatusCode == HttpStatusCode.OK) {
+                        m_log.DebugFormat("Balance found - Content length: {0}", response.ContentLength);
+                        if (response.ContentLength > 0) {
+                            Balance balanceStruct = jsonDeserializer.Deserialize<Balance>(response);
+                            balance = balanceStruct.balance;
+                        } else {
+                            m_log.Error("Balance Content = 0");
+                        }
+                    } else {
+                        m_log.ErrorFormat("Status Balance Call not OK: {0}", response.StatusCode.ToString());
+                    }
 				} else {
 					if (m_moneyServer.ContainsKey(client.AgentId)) {
 						balance = m_moneyServer[client.AgentId];
 					}
 				}
 			}
-
-			#endregion
 
 			return balance;
 		}
@@ -1666,25 +1728,25 @@ namespace OpenSim.Modules.Currency {
 				paramTable["transactionID"] = transactionID;
 
 				// Generate the request for transfer.
-				Hashtable resultTable = genericCurrencyXMLRPCRequest(paramTable, "GetTransaction");
+				// TODO Hashtable resultTable = genericCurrencyXMLRPCRequest(paramTable, "GetTransaction");
 
 				// Handle the return result
-				if (resultTable != null && resultTable.Contains("success")) {
-					if ((bool)resultTable["success"] == true) {
-						int amount = (int)resultTable["amount"];
-						int type	= (int)resultTable["type"];
-						string desc = (string)resultTable["description"];
-						UUID sender = UUID.Zero;
-						UUID recver = UUID.Zero;
-						UUID.TryParse((string)resultTable["sender"], out sender);
-						UUID.TryParse((string)resultTable["receiver"], out recver);
-						args = new EventManager.MoneyTransferArgs(sender, recver, amount, type, desc);
-					} else {
-						m_log.ErrorFormat("[MONEY]: GetTransactionInfo: GetTransactionInfo: Fail to Request. {0}", (string)resultTable["description"]);
-					}
-				} else {
-					m_log.ErrorFormat("[MONEY]: GetTransactionInfo: Invalid Response");
-				}
+				// TODO if (resultTable != null && resultTable.Contains("success")) {
+				// TODO 	if ((bool)resultTable["success"] == true) {
+				// TODO		int amount = (int)resultTable["amount"];
+				// TODO 		int type	= (int)resultTable["type"];
+				// TODO 		string desc = (string)resultTable["description"];
+				// TODO 		UUID sender = UUID.Zero;
+				// TODO		UUID recver = UUID.Zero;
+				// TODO 		UUID.TryParse((string)resultTable["sender"], out sender);
+				// TODO 		UUID.TryParse((string)resultTable["receiver"], out recver);
+				// TODO 		args = new EventManager.MoneyTransferArgs(sender, recver, amount, type, desc);
+				// TODO	} else {
+				// TODO 		m_log.ErrorFormat("[MONEY]: GetTransactionInfo: GetTransactionInfo: Fail to Request. {0}", (string)resultTable["description"]);
+				// TODO 	}
+				// TODO } else {
+				// TODO 	m_log.ErrorFormat("[MONEY]: GetTransactionInfo: Invalid Response");
+				// TODO }
 			} else {
 				m_log.ErrorFormat("[MONEY]: GetTransactionInfo: Invalid Money Server URL");
 			}
