@@ -1215,17 +1215,18 @@ namespace OpenSim.Modules.Currency {
 			#region Send transaction request to money server and parse the resultes.
 
 			if (m_enable_server) {
-				// Fill parameters for money transfer XML-RPC.
-				Hashtable paramTable = new Hashtable();
-				paramTable["senderID"] = sender.ToString();
-				paramTable["receiverID"] = receiver.ToString();
-				paramTable["senderSessionID"] = senderClient.SessionId.ToString();
-				paramTable["senderSecureSessionID"] = senderClient.SecureSessionId.ToString();
-				paramTable["transactionType"] = type;
-				paramTable["objectID"] = objectID.ToString();
-				paramTable["regionHandle"] = regionHandle.ToString();
-				paramTable["amount"] = amount;
-				paramTable["description"] = description;
+                Transfer transfer = new Transfer();
+                transfer.senderID = sender.ToString();
+                transfer.receiverID = receiver.ToString();
+                transfer.senderSessionID = senderClient.SessionId.ToString();
+                transfer.senderSecureSessionID = senderClient.SecureSessionId.ToString();
+                transfer.transactionType = type;
+                transfer.objectID = objectID.ToString();
+                transfer.regionHandle = regionHandle.ToString();
+                transfer.amount = amount;
+                transfer.description = description;
+
+                var request = new RestRequest("rest/transfer", Method.POST);
 
 				// Generate the request for transfer.
 				// TODO Hashtable resultTable = genericCurrencyXMLRPCRequest(paramTable, "TransferMoney");
@@ -1236,7 +1237,7 @@ namespace OpenSim.Modules.Currency {
 				// TODO 		ret = true;
 				// TODO	}
 				// TODO } else
-				// TODDO	m_log.ErrorFormat("[MONEY]: TransferMoney: Can not money transfer request from [{0}] to [{1}]", sender.ToString(), receiver.ToString());
+				// TODO	m_log.ErrorFormat("[MONEY]: TransferMoney: Can not money transfer request from [{0}] to [{1}]", sender.ToString(), receiver.ToString());
 			}
 			//else m_log.ErrorFormat("[MONEY]: TransferMoney: Money Server is not available!!");
 
