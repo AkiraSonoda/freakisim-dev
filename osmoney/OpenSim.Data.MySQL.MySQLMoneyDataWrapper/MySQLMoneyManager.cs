@@ -54,9 +54,15 @@ namespace OpenSim.Data.MySQL.MySQLMoneyDataWrapper {
 
 		private MySqlConnection dbcon;
 
+        public enum Status
+        {
+            SUCCESS_STATUS = 0,
+            PENDING_STATUS = 1,
+            FAILED_STATUS = 2
+        }
 
 
-		public MySQLMoneyManager(string hostname, string database, string username, string password, string cpooling, string port) {
+        public MySQLMoneyManager(string hostname, string database, string username, string password, string cpooling, string port) {
 			string s = "Server=" + hostname + ";Port=" + port + ";Database=" + database + ";User ID=" +
 			           username + ";Password=" + password + ";Pooling=" + cpooling + ";";
 			initialise(s);

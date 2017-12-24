@@ -118,11 +118,11 @@ namespace OpenSim.Data.MySQL.MySQLMoneyDataWrapper {
 	}
 
 
-	public enum Status {
-		SUCCESS_STATUS = 0,
-		PENDING_STATUS = 1,
-		FAILED_STATUS = 2
-	}
+//	public enum Status {
+//		SUCCESS_STATUS = 0,
+//		PENDING_STATUS = 1,
+//		FAILED_STATUS = 2
+//	}
 
 
 	public class UserInfo {

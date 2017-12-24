@@ -57,8 +57,14 @@ namespace OpenSim.Grid.MoneyServer {
 		public MoneyDBService() {
 		}
 
+        public enum Status
+        {
+            SUCCESS_STATUS = 0,
+            PENDING_STATUS = 1,
+            FAILED_STATUS = 2
+        }
 
-		public void initialise(string connectionString, int maxDBConnections) {
+        public void initialise(string connectionString, int maxDBConnections) {
 			m_log.DebugFormat("initialise");
 			m_maxConnections = maxDBConnections;
 			if (connectionString != string.Empty) {
