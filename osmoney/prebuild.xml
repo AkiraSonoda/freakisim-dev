@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <Prebuild xmlns="http://dnpb.sourceforge.net/schemas/prebuild-1.7.xsd" version="1.7">
   <Solution name="OpenSim.Currency" activeConfig="Release" path="./" version="0.5.0-$Rev$">
-    <Configuration name="Debug">
+    <Configuration name="Release">
       <Options>
         <CompilerDefines>TRACE;DEBUG</CompilerDefines>
         <OptimizeCode>false</OptimizeCode>

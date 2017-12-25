@@ -57,7 +57,7 @@ using RestSharp;
 using RestSharp.Deserializers;
 
 
-[assembly: Addin("DTLNSLMoneyModule", "1.0")]
+[assembly: Addin("AkkiMoneyModule", "1.0")]
 [assembly: AddinDependency("OpenSim", "0.5")]
 
 
@@ -156,8 +156,8 @@ namespace OpenSim.Modules.Currency {
 
 
 	//
-	[Extension(Path = "/OpenSim/RegionModules", NodeName = "RegionModule", Id = "DTLNSLMoneyModule")]
-	public class DTLNSLMoneyModule : IMoneyModule, ISharedRegionModule {
+	[Extension(Path = "/OpenSim/RegionModules", NodeName = "RegionModule", Id = "AkkiMoneyModule")]
+	public class AkkiMoneyModule : IMoneyModule, ISharedRegionModule {
 		#region Constant numbers and members.
 
 		// Constant memebers
@@ -390,7 +390,7 @@ namespace OpenSim.Modules.Currency {
 		}
 
 		public string Name {
-			get { return "DTLNSLMoneyModule"; }
+			get { return "AkkiMoneyModule"; }
 		}
 
 		public void PostInitialise() {
