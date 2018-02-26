@@ -596,12 +596,14 @@ namespace OpenSim.Region.CoreModules.World.Archiver
                 }
                 if (UserManager != null)
                     UserManager.AddUser(part.CreatorID, part.CreatorData);
+				
+				// AkiMod - disable this check, because of problems with hypergrid
+                // if (!ResolveUserUuid(scene, part.OwnerID))
+                //    part.OwnerID = m_defaultUser;
 
-                if (!ResolveUserUuid(scene, part.OwnerID))
-                    part.OwnerID = m_defaultUser;
-
-                if (!ResolveUserUuid(scene, part.LastOwnerID))
-                    part.LastOwnerID = m_defaultUser;
+				// AkiMod - disable this chack, because of problems with hypergrid
+                // if (!ResolveUserUuid(scene, part.LastOwnerID))
+                //     part.LastOwnerID = m_defaultUser;
 
                 if (!ResolveGroupUuid(part.GroupID))
                     part.GroupID = UUID.Zero;
@@ -615,10 +617,11 @@ namespace OpenSim.Region.CoreModules.World.Archiver
                 // being no copy/no mod for everyone
                 part.TaskInventory.ForEach(delegate(KeyValuePair<UUID, TaskInventoryItem> kvp)
                 {
-                    if (!(ResolveUserUuid(scene, kvp.Value.OwnerID) || ResolveGroupUuid(kvp.Value.OwnerID)))
-                    {
-                        kvp.Value.OwnerID = m_defaultUser;
-                    }
+                    // AkiMod -- remove this check
+					// if (!(ResolveUserUuid(scene, kvp.Value.OwnerID) || ResolveGroupUuid(kvp.Value.OwnerID)))
+                    // {
+                    //     kvp.Value.OwnerID = m_defaultUser;
+                    // }
 
                     if (string.IsNullOrEmpty(kvp.Value.CreatorData))
                     {
