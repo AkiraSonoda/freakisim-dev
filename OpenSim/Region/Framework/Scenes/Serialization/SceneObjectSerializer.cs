@@ -230,7 +230,8 @@ namespace OpenSim.Region.Framework.Scenes.Serialization
             try
             {
                 XmlDocument doc = new XmlDocument();
-                doc.LoadXml(xmlData);
+                /* this one is for OpenSim brain-deadness */
+                doc.LoadXml(xmlData.Replace("<SceneObjectPart xmlns:xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">", "<SceneObjectPart xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">"));
 
                 XmlNodeList parts = doc.GetElementsByTagName("SceneObjectPart");
 
@@ -1280,8 +1281,6 @@ namespace OpenSim.Region.Framework.Scenes.Serialization
         public static void SOPToXml2(XmlTextWriter writer, SceneObjectPart sop, Dictionary<string, object> options)
         {
             writer.WriteStartElement("SceneObjectPart");
-            writer.WriteAttributeString("xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance");
-            writer.WriteAttributeString("xmlns:xsd", "http://www.w3.org/2001/XMLSchema");
 
             writer.WriteElementString("AllowedDrop", sop.AllowedDrop.ToString().ToLower());
 

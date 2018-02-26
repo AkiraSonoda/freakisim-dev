@@ -4350,7 +4350,7 @@ namespace OpenSim.Region.ClientStack.LindenUDP
         {
             uint priority = 0;  // time based ordering only
             lock (m_entityProps.SyncRoot)
-                m_entityProps.Enqueue(priority, new ObjectPropertyUpdate(entity,requestFlags,true,false));
+                m_entityProps.Enqueue(priority, new ObjectPropertyUpdate(entity,requestFlags,true,true));
         }
 
         private void ResendPropertyUpdate(ObjectPropertyUpdate update)
@@ -8817,6 +8817,9 @@ namespace OpenSim.Region.ClientStack.LindenUDP
 
         private bool HandleMapBlockRequest(IClientAPI sender, Packet Pack)
         {
+            if (m_log.IsDebugEnabled) {
+                m_log.DebugFormat ("{0} ", System.Reflection.MethodBase.GetCurrentMethod ().Name);
+            }
             MapBlockRequestPacket MapRequest = (MapBlockRequestPacket)Pack;
 
             #region Packet Session and User Check
