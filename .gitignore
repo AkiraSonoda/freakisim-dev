@@ -108,7 +108,3 @@ doc/doxygen.error.log
 /*.tmp
 /FreAkiSim.sln
 /FreAkiSim.userprefs
-
-*.oar
-
-bin/\.directory
