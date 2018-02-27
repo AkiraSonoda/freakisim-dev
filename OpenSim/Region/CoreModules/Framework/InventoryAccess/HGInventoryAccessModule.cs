@@ -94,11 +94,11 @@ namespace OpenSim.Region.CoreModules.Framework.InventoryAccess
                     if (thisModuleConfig != null)
                     {
                         m_HomeURI = Util.GetConfigVarFromSections<string>(source, "HomeURI",
-                            new string[] { "Startup", "Hypergrid", "HGInventoryAccessModule" }, String.Empty).ToLowerInvariant();
+                            new string[] { "Startup", "Hypergrid", "HGInventoryAccessModule" }, String.Empty);
                         m_ThisGatekeeper = Util.GetConfigVarFromSections<string>(source, "GatekeeperURI",
                             new string[] { "Startup", "Hypergrid", "HGInventoryAccessModule" }, String.Empty);
                         // Legacy. Renove soon!
-                        m_ThisGatekeeper = thisModuleConfig.GetString("Gatekeeper", m_ThisGatekeeper).ToLowerInvariant();
+                        m_ThisGatekeeper = thisModuleConfig.GetString("Gatekeeper", m_ThisGatekeeper);
                         if(!m_HomeURI.EndsWith("/"))
                         {
                             m_HomeURI += "/";

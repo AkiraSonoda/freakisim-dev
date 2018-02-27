@@ -451,7 +451,7 @@ namespace OpenSim.Data.PGSQL
             catch (Exception e)
             {
                 m_log.DebugFormat("[PROFILES_DATA]" +
-                                 ": UpdateUserPick exception {0}", e.Message);
+                                 ": UpdateAvatarNotes exception {0}", e.Message);
                 return false;
             }
             return true;

@@ -36,8 +36,10 @@ namespace OpenSim.Region.ScriptEngine.Shared.Instance
 {
     public class ScriptSerializer
     {
-        public static string Serialize(ScriptInstance instance, bool running)
+        public static string Serialize(ScriptInstance instance)
         {
+            bool running = instance.Running;
+
             XmlDocument xmldoc = new XmlDocument();
 
             XmlNode xmlnode = xmldoc.CreateNode(XmlNodeType.XmlDeclaration,

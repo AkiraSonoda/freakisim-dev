@@ -73,13 +73,13 @@
     ;
     ; Change this to your grid-wide asset server.  Do not add a slash to the end of any of these addresses.
     ;
-    AssetServerURI = "${Const|PrivateBaseURL}:${Const|PrivatePort}"
+    AssetServerURI = "${Const|BaseURL}:${Const|PrivatePort}"
 
 [InventoryService]
     ;
     ; Change this to your grid-wide inventory server
     ;
-    InventoryServerURI = "${Const|PrivateBaseURL}:${Const|PrivatePort}"
+    InventoryServerURI = "${Const|BaseURL}:${Const|PrivatePort}"
 
 [GridInfo]
     ;
@@ -91,7 +91,7 @@
     ;
     ; Change this to your grid-wide grid server
     ;
-    GridServerURI = "${Const|PrivateBaseURL}:${Const|PrivatePort}"
+    GridServerURI = "${Const|BaseURL}:${Const|PrivatePort}"
     ;AllowHypergridMapSearch = true
 
     ;; Directory for map tile images of linked regions
@@ -101,7 +101,7 @@
     ;; Change this to the address of your Gatekeeper service
     ;; (usually bundled with the rest of the services in one 
     ;; Robust server in port ${Const|PublicPort}, but not always)
-    Gatekeeper="${Const|BaseURL}:${Const|PublicPort}/"
+    Gatekeeper="${Const|BaseURL}:${Const|PublicPort}"
 
 
 [Messaging]
@@ -115,37 +115,37 @@
     ;
     ; Change this to your grid-wide grid server
     ;
-    AvatarServerURI = "${Const|PrivateBaseURL}:${Const|PrivatePort}"
+    AvatarServerURI = "${Const|BaseURL}:${Const|PrivatePort}"
 
 [PresenceService]
     ;
     ; Change this to your grid-wide presence server
     ;
-    PresenceServerURI = "${Const|PrivateBaseURL}:${Const|PrivatePort}"
+    PresenceServerURI = "${Const|BaseURL}:${Const|PrivatePort}"
 
 [UserAccountService]
     ;
     ; Change this to your grid-wide user accounts server
     ;
-    UserAccountServerURI = "${Const|PrivateBaseURL}:${Const|PrivatePort}"
+    UserAccountServerURI = "${Const|BaseURL}:${Const|PrivatePort}"
 
 [GridUserService]
     ;
     ; Change this to your grid-wide user accounts server
     ;
-    GridUserServerURI = "${Const|PrivateBaseURL}:${Const|PrivatePort}"
+    GridUserServerURI = "${Const|BaseURL}:${Const|PrivatePort}"
 
 [AuthenticationService]
     ;
     ; Change this to your grid-wide authentication server
     ;
-    AuthenticationServerURI = "${Const|PrivateBaseURL}:${Const|PrivatePort}"
+    AuthenticationServerURI = "${Const|BaseURL}:${Const|PrivatePort}"
 
 [FriendsService]
     ;
     ; Change this to your grid-wide friends server
     ;
-    FriendsServerURI = "${Const|PrivateBaseURL}:${Const|PrivatePort}"
+    FriendsServerURI = "${Const|BaseURL}:${Const|PrivatePort}"
 
 [HGInventoryAccessModule]
     ;
@@ -178,7 +178,7 @@
     ; Change this to your server 
     ; accessible from other grids
     ;
-    HomeURI = "${Const|BaseURL}:${Const|PublicPort}/"
+    HomeURI = "${Const|BaseURL}:${Const|PublicPort}"
 
     ;; The asset types that this grid can export to / import from other grids.
     ;; Comma separated.
@@ -201,22 +201,22 @@
     ; === HG ONLY ===
     ; Change this to your user agent server (HG robust)
     ;
-    UserAgentServerURI = "${Const|BaseURL}:${Const|PublicPort}/"
+    UserAgentServerURI = "${Const|BaseURL}:${Const|PublicPort}"
 
 [MapImageService]
-    MapImageServerURI = "${Const|PrivateBaseURL}:${Const|PrivatePort}"
+    MapImageServerURI = "${Const|BaseURL}:${Const|PrivatePort}"
 
 [UserProfiles]
   ;# {ProfileServiceURL} {} {Set url to UserProfilesService} {}
   ;; Set the value of the url to your UserProfilesService
   ;; If un-set / "" the module is disabled
-  ;; ProfileServiceURL = "${Const|BaseURL}:${Const|PublicPort}/"
+  ;; ProfileServiceURL = ${Const|BaseURL}:${Const|PublicPort}
 
 [XBakes]
   ;# {URL} {} {Set URL for Baked texture service} {}
   ;; Sets the URL for the baked texture ROBUST service.
   ;; Disabled when unset.
-  ;; URL = ${Const|PrivateBaseURL}:${Const|PrivatePort}
+  ;; URL = ${Const|BaseURL}:${Const|PrivatePort}
 
 [AuthorizationService]
   ; If you have regions with access restrictions

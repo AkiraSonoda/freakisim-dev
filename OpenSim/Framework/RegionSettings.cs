@@ -28,7 +28,6 @@
 using OpenMetaverse;
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 
 namespace OpenSim.Framework
 {
@@ -78,7 +77,7 @@ namespace OpenSim.Framework
         /// <returns></returns>
         public override string ToString()
         {
-            return string.Format(CultureInfo.InvariantCulture, "{0},{1},{2}", Yaw, Pitch, Distance);
+            return string.Format("{0},{1},{2}", Yaw, Pitch, Distance);
         }
 
         /// <summary>
@@ -92,9 +91,9 @@ namespace OpenSim.Framework
                 throw new ArgumentException("Invalid string: " + str);
             
             SpawnPoint sp = new SpawnPoint();
-            sp.Yaw = float.Parse(parts[0], CultureInfo.InvariantCulture);
-            sp.Pitch = float.Parse(parts[1], CultureInfo.InvariantCulture);
-            sp.Distance = float.Parse(parts[2], CultureInfo.InvariantCulture);
+            sp.Yaw = float.Parse(parts[0]);
+            sp.Pitch = float.Parse(parts[1]);
+            sp.Distance = float.Parse(parts[2]);
             return sp;
         }
     }

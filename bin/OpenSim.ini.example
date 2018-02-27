@@ -46,17 +46,11 @@
     ;# {BaseURL} {} {BaseURL} {"http://example.com","http://127.0.0.1"} "http://127.0.0.1"
     BaseURL = http://127.0.0.1
     
-    ;# {PrivateBaseURL} {} {BaseURL} normally the value as above but in special cases replace this with the PrivateBaseURL if necessary
-    PrivateBaseURL = ${Const|BaseURL}
-    
     ;# {PublicPort} {} {PublicPort} {8002} "8002"
     PublicPort = "8002"
 
     ;# {PrivatePort} {} {PrivatePort} {8003} "8003"
     PrivatePort = "8003"
-    
-    ; following line is your host name IP address whatever for to be used
-    ExternalHostNameForLSL = 127.0.0.1
 
 
 [Startup]
@@ -480,7 +474,7 @@
     ;; Hostname to use in llRequestURL/llRequestSecureURL
     ;; if not defined - default machine name is being used
     ;; (on Windows this mean NETBIOS name - useably only inside local network)
-    ExternalHostNameForLSL = ${Const|ExternalHostNameForLSL}
+    ; ExternalHostNameForLSL = "127.0.0.1"
 
     ;# {shard} {} {Name to use for X-Secondlife-Shard header? (press enter if unsure)} {} OpenSim
     ;; What is reported as the "X-Secondlife-Shard"
@@ -571,7 +565,7 @@
     ; meant to override the MapImage and search server url given at login, and varying 
     ; on a sim-basis.
     ; Viewers that don't understand it, will ignore it
-    ;MapTileURL = "http://127.0.0.1:9000/"
+    ;MapImageServerURI = "http://127.0.0.1:9000/"
     ;# {SearchServerURI} {} {URL of the search server} {}
     ;SearchServerURI = "http://127.0.0.1:9000/"
 
@@ -608,7 +602,7 @@
     ;# {OfflineMessageURL} {OfflineMessageModule:OfflineMessageModule Offline Message Module V2:Offline Message Module V2} {URL of offline messaging service} {}
     ;; URL of web service for offline message storage. Leave it commented if your service is local to the sim.
     ; OfflineMessageURL = ${Const|BaseURL}/Offline.php
-    ; OfflineMessageURL = ${Const|PrivateBaseURL}:${Const|PrivatePort}
+    ; OfflineMessageURL = ${Const|BaseURL}:${Const|PrivatePort}
 
     ;# {StorageProvider} {Offline Message Module V2:Offline Message Module V2} {DLL that provides the storage interface} {OpenSim.Data.MySQL.dll}
     ;; For standalones, this is the storage dll.
@@ -1043,7 +1037,7 @@
     ;; URI for the groups services of this grid
     ;; e.g. http://yourxmlrpcserver.com/xmlrpc.php for Flotsam XmlRpc
     ;; or http://mygridserver.com:82/Grid/ for SimianGrid
-    ;; or http:://${Const|PrivateBaseURL}:${Const|PrivatePort} for robust, V2
+    ;; or http:://${Const|BaseURL}:${Const|PrivatePort} for robust, V2
     ;; Leave it commented for standalones, V2
     ; GroupsServerURI = ""
 

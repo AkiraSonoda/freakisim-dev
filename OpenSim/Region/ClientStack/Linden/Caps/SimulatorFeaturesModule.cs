@@ -87,7 +87,7 @@ namespace OpenSim.Region.ClientStack.Linden
                 m_DestinationGuideURL = config.GetString ("DestinationGuideURI", m_DestinationGuideURL);
                 m_ExportSupported = config.GetBoolean("ExportSupported", m_ExportSupported);
                 m_GridURL = Util.GetConfigVarFromSections<string>(source, "GatekeeperURI",
-                        new string[] { "Startup", "Hypergrid", "SimulatorFeatures" }, String.Empty).ToLowerInvariant();
+                        new string[] { "Startup", "Hypergrid", "SimulatorFeatures" }, String.Empty);
                 if(!string.IsNullOrEmpty(m_GridURL) && !m_GridURL.EndsWith("/"))
                 {
                     m_GridURL += "/";

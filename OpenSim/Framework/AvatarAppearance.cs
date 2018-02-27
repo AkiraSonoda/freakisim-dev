@@ -753,10 +753,8 @@ namespace OpenSim.Framework
                 if ((data != null) && (data["wearables"] != null) && (data["wearables"]).Type == OSDType.Array)
                 {
                     OSDArray wears = (OSDArray)(data["wearables"]);
-                    for (int i = 0; i < wears.Count && i < m_wearables.Length; i++)
-                    {
+                    for (int i = 0; i < wears.Count; i++)
                         m_wearables[i] = new AvatarWearable((OSDArray)wears[i]);
-                    }
                 }
                 else
                 {

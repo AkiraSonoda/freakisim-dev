@@ -1058,7 +1058,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Instance
 
             PluginData = AsyncCommandManager.GetSerializationData(Engine, ItemID);
 
-            string xml = ScriptSerializer.Serialize(this, this.Running);
+            string xml = ScriptSerializer.Serialize(this);
 
             // Compare hash of the state we just just created with the state last written to disk
             // If the state is different, update the disk file.
@@ -1170,7 +1170,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Instance
             //
             PluginData = AsyncCommandManager.GetSerializationData(Engine, ItemID);
 
-            return ScriptSerializer.Serialize(this, run);
+            return ScriptSerializer.Serialize(this);
         }
 
         public UUID RegionID

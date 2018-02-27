@@ -35,7 +35,6 @@ using OpenSim.Region.Framework.Scenes;
 using OpenSim.Region.ScriptEngine.Interfaces;
 using OpenSim.Region.ScriptEngine.Shared.Api.Interfaces;
 using OpenSim.Region.ScriptEngine.Shared.ScriptBase;
-using OpenSim.Services.Connectors.Hypergrid;
 using OpenSim.Services.Interfaces;
 using System;
 using System.Collections;
@@ -1933,69 +1932,19 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
             return NotecardCache.GetLines(assetID);
         }
 
-        public static bool ParseForeignAvatarName(string firstname, string lastname,
-            out string realFirstName, out string realLastName, out string serverURI)
-        {
-            realFirstName = realLastName = serverURI = string.Empty;
-
-            if (!lastname.Contains("@"))
-                return false;
-
-            if (!firstname.Contains("."))
-                return false;
-
-            realFirstName = firstname.Split('.')[0];
-            realLastName = firstname.Split('.')[1];
-            serverURI = new Uri("http://" + lastname.Replace("@", "")).ToString();
-
-            return true;
-        }
-
         public string osAvatarName2Key(string firstname, string lastname)
         {
             m_host.AddScriptLPS(1);
 
-            IUserManagement userManager = World.RequestModuleInterface<IUserManagement>();
-
-            UUID userID = userManager.GetUserIdByName(firstname, lastname);
-            if (userID != UUID.Zero)
+            UserAccount account = World.UserAccountService.GetUserAccount(World.RegionInfo.ScopeID, firstname, lastname);
+            if (null == account)
             {
-                return userID.ToString();
-            }
-
-            string realFirstName;
-            string realLastName;
-            string serverURI;
-            if (ParseForeignAvatarName(firstname, lastname, out realFirstName, out realLastName, out serverURI))
-            {
-                try
-                {
-                    UserAgentServiceConnector userConnection = new UserAgentServiceConnector(serverURI, true);
-
-                    if (userConnection != null)
-                    {
-                        userID = userConnection.GetUUID(realFirstName, realLastName);
-                        if (userID != UUID.Zero)
-                        {
-                            userManager.AddUser(userID, realFirstName, realLastName, serverURI);
-                            return userID.ToString();
-                        }
-                    }
-                }
-                catch
-                {
-                }
+                return UUID.Zero.ToString();
             }
             else
             {
-                UserAccount account = World.UserAccountService.GetUserAccount(World.RegionInfo.ScopeID, firstname, lastname);
-                if(null != account)
-                {
-                    return account.PrincipalID.ToString();
-                }
+                return account.PrincipalID.ToString();
             }
-
-            return UUID.Zero.ToString();
         }
 
         public string osKey2Name(string id)
@@ -2153,7 +2102,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
 
             IConfigSource config = m_ScriptEngine.ConfigSource;
             string HomeURI = Util.GetConfigVarFromSections<string>(config, "HomeURI", 
-                new string[] { "Startup", "Hypergrid" }, String.Empty).ToLowerInvariant();
+                new string[] { "Startup", "Hypergrid" }, String.Empty);
 
             if (!string.IsNullOrEmpty(HomeURI))
             {
@@ -2184,7 +2133,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
 
             IConfigSource config = m_ScriptEngine.ConfigSource;
             string gatekeeperURI = Util.GetConfigVarFromSections<string>(config, "GatekeeperURI",
-                new string[] { "Startup", "Hypergrid" }, String.Empty).ToLowerInvariant();
+                new string[] { "Startup", "Hypergrid" }, String.Empty);
 
             if (!string.IsNullOrEmpty(gatekeeperURI))
             {
@@ -2198,7 +2147,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
             // Legacy. Remove soon!
             if (config.Configs["GridService"] != null)
             {
-                gatekeeperURI = config.Configs["GridService"].GetString("Gatekeeper", gatekeeperURI).ToLowerInvariant();
+                gatekeeperURI = config.Configs["GridService"].GetString("Gatekeeper", gatekeeperURI);
                 if(!string.IsNullOrEmpty(gatekeeperURI) && !gatekeeperURI.EndsWith("/"))
                 {
                     gatekeeperURI += "/";
@@ -2243,7 +2192,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
             {
                 IConfigSource config = m_ScriptEngine.ConfigSource;
                 returnValue = Util.GetConfigVarFromSections<string>(config, "HomeURI",
-                    new string[] { "Startup", "Hypergrid" }, String.Empty).ToLowerInvariant();
+                    new string[] { "Startup", "Hypergrid" }, String.Empty);
 
                 if (!string.IsNullOrEmpty(returnValue))
                 {
@@ -2257,7 +2206,7 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                 // Legacy. Remove soon!
                 if (config.Configs["LoginService"] != null)
                 {
-                    returnValue = config.Configs["LoginService"].GetString("SRV_HomeURI", returnValue).ToLowerInvariant();
+                    returnValue = config.Configs["LoginService"].GetString("SRV_HomeURI", returnValue);
                 }
 
                 if (string.IsNullOrEmpty(returnValue))
