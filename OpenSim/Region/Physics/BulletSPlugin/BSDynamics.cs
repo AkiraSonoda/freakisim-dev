@@ -68,30 +68,22 @@ namespace OpenSim.Region.Physics.BulletSPlugin
 
         // Linear properties
         private BSVMotor m_linearMotor = new BSVMotor("LinearMotor");
-        private Vector3 m_linearMotorDirection = Vector3.Zero;          // velocity requested by LSL, decayed by time
         private Vector3 m_linearMotorOffset = Vector3.Zero;             // the point of force can be offset from the center
-        private Vector3 m_linearMotorDirectionLASTSET = Vector3.Zero;   // velocity requested by LSL
         private Vector3 m_linearFrictionTimescale = Vector3.Zero;
         private float m_linearMotorDecayTimescale = 1;
         private float m_linearMotorTimescale = 1;
-        private Vector3 m_lastLinearVelocityVector = Vector3.Zero;
         private Vector3 m_lastPositionVector = Vector3.Zero;
-        // private bool m_LinearMotorSetLastFrame = false;
-        // private Vector3 m_linearMotorOffset = Vector3.Zero;
 
         //Angular properties
-        private BSVMotor m_angularMotor = new BSVMotor("AngularMotor");
-        private Vector3 m_angularMotorDirection = Vector3.Zero;         // angular velocity requested by LSL motor
         // private int m_angularMotorApply = 0;                            // application frame counter
-        private Vector3 m_angularMotorVelocity = Vector3.Zero;          // current angular motor velocity
+        //Angular properties
+        private BSVMotor m_angularMotor = new BSVMotor("AngularMotor");
         private float m_angularMotorTimescale = 1;                      // motor angular velocity ramp up rate
         private float m_angularMotorDecayTimescale = 1;                 // motor angular velocity decay rate
         private Vector3 m_angularFrictionTimescale = Vector3.Zero;      // body angular velocity  decay rate
         private Vector3 m_lastAngularVelocity = Vector3.Zero;
-        private Vector3 m_lastVertAttractor = Vector3.Zero;             // what VA was last applied to body
 
         //Deflection properties
-        private BSVMotor m_angularDeflectionMotor = new BSVMotor("AngularDeflection");
         private float m_angularDeflectionEfficiency = 0;
         private float m_angularDeflectionTimescale = 1;
         private float m_linearDeflectionEfficiency = 0;
@@ -103,17 +95,15 @@ namespace OpenSim.Region.Physics.BulletSPlugin
         private float m_bankingTimescale = 1;
 
         //Hover and Buoyancy properties
-        private BSVMotor m_hoverMotor = new BSVMotor("Hover");
         private float m_VhoverHeight = 0f;
         private float m_VhoverEfficiency = 0f;
-        private float m_VhoverTimescale = 0f;
+        private float m_VhoverTimescale = 310f;
         private float m_VhoverTargetHeight = -1.0f;     // if <0 then no hover, else its the current target height
         // Modifies gravity. Slider between -1 (double-gravity) and 1 (full anti-gravity)
         private float m_VehicleBuoyancy = 0f;
         private Vector3 m_VehicleGravity = Vector3.Zero;    // Gravity computed when buoyancy set
 
         //Attractor properties
-        private BSVMotor m_verticalAttractionMotor = new BSVMotor("VerticalAttraction");
         private float m_verticalAttractionEfficiency = 1.0f; // damped
         private float m_verticalAttractionCutoff = 500f;     // per the documentation
         // Timescale > cutoff  means no vert attractor.
@@ -210,11 +200,9 @@ namespace OpenSim.Region.Physics.BulletSPlugin
                     break;
                 case Vehicle.VERTICAL_ATTRACTION_EFFICIENCY:
                     m_verticalAttractionEfficiency = ClampInRange(0.1f, pValue, 1f);
-                    m_verticalAttractionMotor.Efficiency = m_verticalAttractionEfficiency;
                     break;
                 case Vehicle.VERTICAL_ATTRACTION_TIMESCALE:
                     m_verticalAttractionTimescale = Math.Max(pValue, 0.01f);
-                    m_verticalAttractionMotor.TimeScale = m_verticalAttractionTimescale;
                     break;
 
                 // These are vector properties but the engine lets you use a single float value to
@@ -223,18 +211,14 @@ namespace OpenSim.Region.Physics.BulletSPlugin
                     m_angularFrictionTimescale = new Vector3(pValue, pValue, pValue);
                     break;
                 case Vehicle.ANGULAR_MOTOR_DIRECTION:
-                    m_angularMotorDirection = new Vector3(pValue, pValue, pValue);
-                    m_angularMotor.Zero();
-                    m_angularMotor.SetTarget(m_angularMotorDirection);
+                    m_angularMotor.SetTarget(new Vector3(pValue, pValue, pValue));
                     break;
                 case Vehicle.LINEAR_FRICTION_TIMESCALE:
                     clampTemp = Math.Max(pValue, 0.01f);
                     m_linearFrictionTimescale = new Vector3(clampTemp, clampTemp, clampTemp);
                     break;
                 case Vehicle.LINEAR_MOTOR_DIRECTION:
-                    m_linearMotorDirection = new Vector3(pValue, pValue, pValue);
-                    m_linearMotorDirectionLASTSET = new Vector3(pValue, pValue, pValue);
-                    m_linearMotor.SetTarget(m_linearMotorDirection);
+                    m_linearMotor.SetTarget(new Vector3(pValue, pValue, pValue));
                     break;
                 case Vehicle.LINEAR_MOTOR_OFFSET:
                     m_linearMotorOffset = new Vector3(pValue, pValue, pValue);
@@ -259,9 +243,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
                     pValue.X = ClampInRange(-12.56f, pValue.X, 12.56f);
                     pValue.Y = ClampInRange(-12.56f, pValue.Y, 12.56f);
                     pValue.Z = ClampInRange(-12.56f, pValue.Z, 12.56f);
-                    m_angularMotorDirection = new Vector3(pValue.X, pValue.Y, pValue.Z);
-                    m_angularMotor.Zero();
-                    m_angularMotor.SetTarget(m_angularMotorDirection);
+                    m_angularMotor.SetTarget(pValue);
                     break;
                 case Vehicle.LINEAR_FRICTION_TIMESCALE:
                     pValue.X = Math.Max(pValue.X, 0.01f);
@@ -270,9 +252,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
                     m_linearFrictionTimescale = new Vector3(pValue.X, pValue.Y, pValue.Z);
                     break;
                 case Vehicle.LINEAR_MOTOR_DIRECTION:
-                    m_linearMotorDirection = new Vector3(pValue.X, pValue.Y, pValue.Z);
-                    m_linearMotorDirectionLASTSET = new Vector3(pValue.X, pValue.Y, pValue.Z);
-                    m_linearMotor.SetTarget(m_linearMotorDirection);
+                    m_linearMotor.SetTarget(pValue);
                     break;
                 case Vehicle.LINEAR_MOTOR_OFFSET:
                     m_linearMotorOffset = new Vector3(pValue.X, pValue.Y, pValue.Z);
@@ -320,20 +300,18 @@ namespace OpenSim.Region.Physics.BulletSPlugin
             switch (pType)
             {
                 case Vehicle.TYPE_NONE:
-                    m_linearMotorDirection = Vector3.Zero;
-                    m_linearMotorTimescale = 0;
-                    m_linearMotorDecayTimescale = 0;
-                    m_linearFrictionTimescale = new Vector3(0, 0, 0);
+                    m_linearMotorTimescale = 120;
+                    m_linearMotorDecayTimescale = 120;
+                    m_linearFrictionTimescale = new Vector3(120, 120, 120);
 
-                    m_angularMotorDirection = Vector3.Zero;
-                    m_angularMotorDecayTimescale = 0;
-                    m_angularMotorTimescale = 0;
-                    m_angularFrictionTimescale = new Vector3(0, 0, 0);
+                    m_angularMotorDecayTimescale = 120;
+                    m_angularMotorTimescale = 120;
+                    m_angularFrictionTimescale = new Vector3(120, 120, 120);
 
                     m_VhoverHeight = 0;
                     m_VhoverEfficiency = 0;
-                    m_VhoverTimescale = 0;
-                    m_VehicleBuoyancy = 0;
+                    m_VhoverTimescale = 310;
+                    m_VehicleBuoyancy = 1;
 
                     m_linearDeflectionEfficiency = 1;
                     m_linearDeflectionTimescale = 1;
@@ -342,7 +320,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
                     m_angularDeflectionTimescale = 1000;
 
                     m_verticalAttractionEfficiency = 0;
-                    m_verticalAttractionTimescale = 0;
+                    m_verticalAttractionTimescale = 510;
 
                     m_bankingEfficiency = 0;
                     m_bankingTimescale = 1000;
@@ -354,18 +332,16 @@ namespace OpenSim.Region.Physics.BulletSPlugin
                     break;
 
                 case Vehicle.TYPE_SLED:
-                    m_linearMotorDirection = Vector3.Zero;
                     m_linearMotorTimescale = 1000;
                     m_linearMotorDecayTimescale = 120;
                     m_linearFrictionTimescale = new Vector3(30, 1, 1000);
 
-                    m_angularMotorDirection = Vector3.Zero;
                     m_angularMotorTimescale = 1000;
                     m_angularMotorDecayTimescale = 120;
                     m_angularFrictionTimescale = new Vector3(1000, 1000, 1000);
 
                     m_VhoverHeight = 0;
-                    m_VhoverEfficiency = 10;    // TODO: this looks wrong!!
+                    m_VhoverEfficiency = 1;
                     m_VhoverTimescale = 10;
                     m_VehicleBuoyancy = 0;
 
@@ -393,12 +369,10 @@ namespace OpenSim.Region.Physics.BulletSPlugin
 
                     break;
                 case Vehicle.TYPE_CAR:
-                    m_linearMotorDirection = Vector3.Zero;
                     m_linearMotorTimescale = 1;
                     m_linearMotorDecayTimescale = 60;
                     m_linearFrictionTimescale = new Vector3(100, 2, 1000);
 
-                    m_angularMotorDirection = Vector3.Zero;
                     m_angularMotorTimescale = 1;
                     m_angularMotorDecayTimescale = 0.8f;
                     m_angularFrictionTimescale = new Vector3(1000, 1000, 1000);
@@ -431,12 +405,10 @@ namespace OpenSim.Region.Physics.BulletSPlugin
                                 | VehicleFlag.HOVER_UP_ONLY);
                     break;
                 case Vehicle.TYPE_BOAT:
-                    m_linearMotorDirection = Vector3.Zero;
                     m_linearMotorTimescale = 5;
                     m_linearMotorDecayTimescale = 60;
                     m_linearFrictionTimescale = new Vector3(10, 3, 2);
 
-                    m_angularMotorDirection = Vector3.Zero;
                     m_angularMotorTimescale = 4;
                     m_angularMotorDecayTimescale = 4;
                     m_angularFrictionTimescale = new Vector3(10,10,10);
@@ -469,12 +441,10 @@ namespace OpenSim.Region.Physics.BulletSPlugin
                                     | VehicleFlag.HOVER_WATER_ONLY);
                     break;
                 case Vehicle.TYPE_AIRPLANE:
-                    m_linearMotorDirection = Vector3.Zero;
                     m_linearMotorTimescale = 2;
                     m_linearMotorDecayTimescale = 60;
                     m_linearFrictionTimescale = new Vector3(200, 10, 5);
 
-                    m_angularMotorDirection = Vector3.Zero;
                     m_angularMotorTimescale = 4;
                     m_angularMotorDecayTimescale = 4;
                     m_angularFrictionTimescale = new Vector3(20, 20, 20);
@@ -507,12 +477,10 @@ namespace OpenSim.Region.Physics.BulletSPlugin
                     m_flags |= (VehicleFlag.LIMIT_ROLL_ONLY);
                     break;
                 case Vehicle.TYPE_BALLOON:
-                    m_linearMotorDirection = Vector3.Zero;
                     m_linearMotorTimescale = 5;
                     m_linearFrictionTimescale = new Vector3(5, 5, 5);
                     m_linearMotorDecayTimescale = 60;
 
-                    m_angularMotorDirection = Vector3.Zero;
                     m_angularMotorTimescale = 6;
                     m_angularFrictionTimescale = new Vector3(10, 10, 10);
                     m_angularMotorDecayTimescale = 10;
@@ -553,14 +521,6 @@ namespace OpenSim.Region.Physics.BulletSPlugin
 
             m_angularMotor = new BSVMotor("AngularMotor", m_angularMotorTimescale, m_angularMotorDecayTimescale, 1f);
             // m_angularMotor.PhysicsScene = m_physicsScene;  // DEBUG DEBUG DEBUG (enables detail logging)
-
-            /*  Not implemented
-            m_verticalAttractionMotor = new BSVMotor("VerticalAttraction", m_verticalAttractionTimescale,
-                                BSMotor.Infinite, BSMotor.InfiniteVector,
-                                m_verticalAttractionEfficiency);
-            // Z goes away and we keep X and Y
-            m_verticalAttractionMotor.PhysicsScene = PhysicsScene;  // DEBUG DEBUG DEBUG (enables detail logging)
-             */
 
             if (this.Type == Vehicle.TYPE_NONE)
             {
@@ -1050,10 +1010,10 @@ namespace OpenSim.Region.Physics.BulletSPlugin
             Vector3 frictionFactorV = ComputeFrictionFactor(m_linearFrictionTimescale, pTimestep);
             linearMotorCorrectionV -= (currentVelV * frictionFactorV);
 
-            // Motor is vehicle coordinates. Rotate it to world coordinates
+            // If we're a ground vehicle, don't add any upward Z movement on deflection
             Vector3 linearMotorVelocityW = linearMotorCorrectionV * VehicleFrameOrientation;
 
-            // If we're a ground vehicle, don't add any upward Z movement
+            // If we're a ground vehicle, don't add any upward Z movement on world coord
             if ((m_flags & VehicleFlag.LIMIT_MOTOR_UP) != 0)
             {
                 if (linearMotorVelocityW.Z > 0f)
@@ -1074,6 +1034,11 @@ namespace OpenSim.Region.Physics.BulletSPlugin
         {
             Vector3 linearDeflectionV = Vector3.Zero;
             Vector3 velocityV = VehicleForwardVelocity;
+
+            if((m_flags & VehicleFlag.NO_DEFLECTION_UP) != 0)
+            {
+                velocityV.Z = 0;
+            }
 
             if (BSParam.VehicleEnableLinearDeflection)
             {
@@ -1130,39 +1095,38 @@ namespace OpenSim.Region.Physics.BulletSPlugin
             if ((m_flags & (VehicleFlag.HOVER_WATER_ONLY | VehicleFlag.HOVER_TERRAIN_ONLY | VehicleFlag.HOVER_GLOBAL_HEIGHT)) != 0 && (m_VhoverHeight > 0) && (m_VhoverTimescale < 300))
             {
                 // We should hover, get the target height
-                if ((m_flags & VehicleFlag.HOVER_WATER_ONLY) != 0)
-                {
-                    m_VhoverTargetHeight = GetWaterLevel(VehiclePosition) + m_VhoverHeight;
-                }
-                if ((m_flags & VehicleFlag.HOVER_TERRAIN_ONLY) != 0)
-                {
-                    m_VhoverTargetHeight = GetTerrainHeight(VehiclePosition) + m_VhoverHeight;
-                }
                 if ((m_flags & VehicleFlag.HOVER_GLOBAL_HEIGHT) != 0)
                 {
                     m_VhoverTargetHeight = m_VhoverHeight;
                 }
-                if ((m_flags & VehicleFlag.HOVER_UP_ONLY) != 0)
+                else
                 {
-                    // If body is already heigher, use its height as target height
-                    if (VehiclePosition.Z > m_VhoverTargetHeight)
+                    float waterHeight = GetWaterLevel(VehiclePosition);
+                    float terrainHeight = GetTerrainHeight(VehiclePosition);
+                    if ((m_flags & VehicleFlag.HOVER_WATER_ONLY) != 0)
                     {
-                        m_VhoverTargetHeight = VehiclePosition.Z;
-
-                        // A 'misfeature' of this flag is that if the vehicle is above it's hover height,
-                        //     the vehicle's buoyancy goes away. This is an SL bug that got used by so many
-                        //    scripts that it could not be changed.
-                        // So, if above the height, reapply gravity if buoyancy had it turned off.
-                        if (m_VehicleBuoyancy != 0)
-                        {
-                            Vector3 appliedGravity = ControllingPrim.ComputeGravity(ControllingPrim.Buoyancy) * m_vehicleMass;
-                            VehicleAddForce(appliedGravity);
-                        }
+                        m_VhoverTargetHeight = waterHeight + m_VhoverHeight;
+                    }
+                    else if ((m_flags & VehicleFlag.HOVER_TERRAIN_ONLY) != 0)
+                    {
+                        m_VhoverTargetHeight = terrainHeight + m_VhoverHeight;
+                    }
+                    else
+                    { 
+                        m_VhoverTargetHeight = Math.Max(waterHeight, terrainHeight) + m_VhoverHeight;
                     }
                 }
 
                 if ((m_flags & VehicleFlag.LOCK_HOVER_HEIGHT) != 0)
                 {
+                    if ((m_flags & VehicleFlag.HOVER_UP_ONLY) != 0)
+                    {
+                        // If body is already heigher, use its height as target height
+                        if (VehiclePosition.Z > m_VhoverTargetHeight)
+                        {
+                            m_VhoverTargetHeight = VehiclePosition.Z;
+                        }
+                    }
                     if (Math.Abs(VehiclePosition.Z - m_VhoverTargetHeight) > 0.2f)
                     {
                         Vector3 pos = VehiclePosition;
@@ -1176,17 +1140,20 @@ namespace OpenSim.Region.Physics.BulletSPlugin
                 {
                     // Error is positive if below the target and negative if above.
                     Vector3 hpos = VehiclePosition;
-                    float verticalError = m_VhoverTargetHeight - hpos.Z;
+                    float verticalError = m_VhoverTargetHeight + 0.21728f - hpos.Z;
                     float verticalCorrection = verticalError / m_VhoverTimescale;
                     verticalCorrection *= m_VhoverEfficiency;
 
-                    hpos.Z += verticalCorrection;
-                    VehiclePosition = hpos;
+                    if ((m_flags & VehicleFlag.HOVER_UP_ONLY) == 0 || verticalCorrection > 0)
+                    {
+                        hpos.Z += verticalCorrection;
+                        VehiclePosition = hpos;
 
-                    // Since we are hovering, we need to do the opposite of falling -- get rid of world Z
-                    Vector3 vel = VehicleVelocity;
-                    vel.Z = 0f;
-                    VehicleVelocity = vel;
+                        // Since we are hovering, we need to do the opposite of falling -- get rid of world Z
+                        Vector3 vel = VehicleVelocity;
+                        vel.Z = 0f;
+                        VehicleVelocity = vel;
+                    }
 
                     /*
                     float verticalCorrectionVelocity = verticalError / m_VhoverTimescale;
@@ -1312,6 +1279,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
         private void ApplyGravity(float pTimeStep)
         {
             Vector3 appliedGravity = m_VehicleGravity * m_vehicleMass;
+            appliedGravity -= appliedGravity * m_VehicleBuoyancy;
 
             // Hack to reduce downward force if the vehicle is probably sitting on the ground
             if (ControllingPrim.HasSomeCollision && IsGroundVehicle)
@@ -1334,12 +1302,12 @@ namespace OpenSim.Region.Physics.BulletSPlugin
         {
             ComputeAngularTurning(pTimestep);
 
-            ComputeAngularVerticalAttraction();
+            ComputeAngularVerticalAttraction(pTimestep);
 
-            ComputeAngularDeflection();
+            ComputeAngularDeflection(pTimestep);
 
-            ComputeAngularBanking();
-
+            ComputeAngularBanking(pTimestep);
+            // ==================================================================
             // ==================================================================
             if (VehicleRotationalVelocity.ApproxEquals(Vector3.Zero, 0.0001f))
             {
@@ -1392,7 +1360,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
             Vector3 currentAngularV = VehicleRotationalVelocity * Quaternion.Inverse(VehicleFrameOrientation);
             Vector3 angularMotorContributionV = m_angularMotor.Step(pTimestep, currentAngularV);
 
-            // ==================================================================
+            // Reduce any velocity by friction.
             // From http://wiki.secondlife.com/wiki/LlSetVehicleFlags :
             //    This flag prevents linear deflection parallel to world z-axis. This is useful
             //    for preventing ground vehicles with large linear deflection, like bumper cars,
@@ -1425,7 +1393,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
         //      and then set the VEHICLE_VERTICAL_ATTRACTION_EFFICIENCY to control the damping. An
         //      efficiency of 0.0 will cause the spring to wobble around its equilibrium, while an
         //      efficiency of 1.0 will cause the spring to reach its equilibrium with exponential decay.
-        public void ComputeAngularVerticalAttraction()
+        public void ComputeAngularVerticalAttraction(float pTimestep)
         {
 
             // If vertical attaction timescale is reasonable
@@ -1436,12 +1404,12 @@ namespace OpenSim.Region.Physics.BulletSPlugin
                 {
                     case 0:
                         {
-                            //Another formula to try got from :
+
                             //http://answers.unity3d.com/questions/10425/how-to-stabilize-angular-motion-alignment-of-hover.html
 
                             // Flipping what was originally a timescale into a speed variable and then multiplying it by 2
                             //    since only computing half the distance between the angles.
-                            float verticalAttractionSpeed = (1 / m_verticalAttractionTimescale) * 2.0f;
+                            float verticalAttractionSpeed = Math.Min(1, pTimestep / m_verticalAttractionTimescale * 2.0f);
 
                             // Make a prediction of where the up axis will be when this is applied rather then where it is now as
                             //     this makes for a smoother adjustment and less fighting between the various forces.
@@ -1496,8 +1464,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
                             // Turn that quaternion into Euler values to make it into velocities to apply.
                             Vector3 vertContributionW = Vector3.Zero;
                             correctionRotationW.GetEulerAngles(out vertContributionW.X, out vertContributionW.Y, out vertContributionW.Z);
-                            vertContributionW *= -1f;
-                            vertContributionW /= m_verticalAttractionTimescale;
+                            vertContributionW *= -Math.Min(1, pTimestep / m_verticalAttractionTimescale);
 
                             VehicleRotationalVelocity += vertContributionW;
 
@@ -1515,12 +1482,12 @@ namespace OpenSim.Region.Physics.BulletSPlugin
                             Vector3 vertContributionV = Vector3.Zero;
                             Vector3 origRotVelW = VehicleRotationalVelocity;        // DEBUG DEBUG
 
-                            // Take a vector pointing up and convert it from world to vehicle relative coords.
+                            // Angular correction to correct the direction the vehicle is pointing to be
                             Vector3 verticalError = Vector3.Normalize(Vector3.UnitZ * VehicleFrameOrientation);
-
-                            // If vertical attraction correction is needed, the vector that was pointing up (UnitZ)
-                            //    is now:
-                            //    leaning to one side: rotated around the X axis with the Y value going
+                            //      the direction is should want to be pointing.
+                            // The vehicle is moving in some direction and correct its orientation to it is pointing
+                            //     in that direction.
+                            // TODO: implement reference frame.
                             //        from zero (nearly straight up) to one (completely to the side)) or
                             //    leaning front-to-back: rotated around the Y axis with the value of X being between
                             //         zero and one.
@@ -1544,7 +1511,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
                             Vector3 unscaledContribVerticalErrorV = vertContributionV;     // DEBUG DEBUG
 
                             // The correction happens over the user's time period
-                            vertContributionV /= m_verticalAttractionTimescale;
+                            vertContributionV *= Math.Min(1, pTimestep / m_verticalAttractionTimescale);
 
                             // Rotate the vehicle rotation to the world coordinates.
                             VehicleRotationalVelocity += (vertContributionV * VehicleFrameOrientation);
@@ -1573,10 +1540,10 @@ namespace OpenSim.Region.Physics.BulletSPlugin
         // The vehicle is moving in some direction and correct its orientation to it is pointing
         //     in that direction.
         // TODO: implement reference frame.
-        public void ComputeAngularDeflection()
+        public void ComputeAngularDeflection(float pTimestep)
         {   
 
-            if (BSParam.VehicleEnableAngularDeflection && m_angularDeflectionEfficiency != 0 && VehicleForwardSpeed > 0.2)
+            if (BSParam.VehicleEnableAngularDeflection && m_angularDeflectionEfficiency != 0)
             {
                 Vector3 deflectContributionV = Vector3.Zero;
 
@@ -1610,7 +1577,7 @@ namespace OpenSim.Region.Physics.BulletSPlugin
 
                 // Scale the correction by recovery timescale and efficiency
                 //    Not modeling a spring so clamp the scale to no more then the arc
-                deflectContributionV = (-deflectionError) * ClampInRange(0, m_angularDeflectionEfficiency/m_angularDeflectionTimescale,1f);
+                deflectContributionV = (-deflectionError) * Math.Min(1, pTimestep * m_angularDeflectionEfficiency / m_angularDeflectionTimescale);
                 //deflectContributionV /= m_angularDeflectionTimescale;
 
                 // VehicleRotationalVelocity += deflectContributionV * VehicleFrameOrientation;
@@ -1653,19 +1620,14 @@ namespace OpenSim.Region.Physics.BulletSPlugin
         //      world z-axis is determined by the VEHICLE_BANKING_TIMESCALE. So if you want the vehicle to
         //      bank quickly then give it a banking timescale of about a second or less, otherwise you can
         //      make a sluggish vehicle by giving it a timescale of several seconds.
-        public void ComputeAngularBanking()
+        public void ComputeAngularBanking(float pTimestep)
         {
             if (BSParam.VehicleEnableAngularBanking && m_bankingEfficiency != 0 && m_verticalAttractionTimescale < m_verticalAttractionCutoff)
             {
                 Vector3 bankingContributionV = Vector3.Zero;
-
-                // Rotate a UnitZ vector (pointing up) to how the vehicle is oriented.
-                // As the vehicle rolls to the right or left, the Y value will increase from
-                //     zero (straight up) to 1 or -1 (full tilt right  or left)
                 Vector3 rollComponents = Vector3.UnitZ * VehicleFrameOrientation;
-
                 // Figure out the yaw value for this much roll.
-                float yawAngle = m_angularMotorDirection.X * m_bankingEfficiency;
+                float yawAngle = (float)Math.Atan2(rollComponents.Y, rollComponents.X) * m_bankingEfficiency;
                 //        actual error  =       static turn error            +           dynamic turn error
                 float mixedYawAngle =(yawAngle * (1f - m_bankingMix)) + ((yawAngle * m_bankingMix) * VehicleForwardSpeed);
 
@@ -1674,17 +1636,11 @@ namespace OpenSim.Region.Physics.BulletSPlugin
                 mixedYawAngle = ClampInRange(-12, mixedYawAngle, 12);
 
                 // Build the force vector to change rotation from what it is to what it should be
-                bankingContributionV.Z = -mixedYawAngle;
+                bankingContributionV.Z = mixedYawAngle;
 
-                // Don't do it all at once. Fudge because 1 second is too fast with most user defined roll as PI*4.
                 bankingContributionV /= m_bankingTimescale * BSParam.VehicleAngularBankingTimescaleFudge;
 
-                //VehicleRotationalVelocity += bankingContributionV * VehicleFrameOrientation;
-                VehicleRotationalVelocity += bankingContributionV;
-
-
-                VDetailLog("{0},  MoveAngular,Banking,rollComp={1},speed={2},rollComp={3},yAng={4},mYAng={5},ret={6}",
-                            ControllingPrim.LocalID, rollComponents, VehicleForwardSpeed, rollComponents, yawAngle, mixedYawAngle, bankingContributionV);
+                VehicleRotationalVelocity += bankingContributionV * pTimestep * VehicleFrameOrientation;
             }
         }
 
