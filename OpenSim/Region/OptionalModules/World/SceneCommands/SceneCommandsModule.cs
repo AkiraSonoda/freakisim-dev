@@ -293,7 +293,6 @@ namespace OpenSim.Region.OptionalModules.Avatar.Attachments
                 if (bool.TryParse(options["updates"], out enableUpdateDebugging))
                 {
                     m_scene.DebugUpdates = enableUpdateDebugging;
-                    GcNotify.Enabled = enableUpdateDebugging;
                 }
             }
         }

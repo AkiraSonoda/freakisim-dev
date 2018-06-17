@@ -12496,6 +12496,49 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                             case ScriptBaseClass.OBJECT_TEMP_ON_REZ:
                                 ret.Add(new LSL_Integer(0));
                                 break;
+
+                            case ScriptBaseClass.OBJECT_BODY_SHAPE_TYPE:
+                                AvatarAppearance appearance = av.Appearance;
+                                byte[] vpParams = appearance != null ? appearance.VisualParams : null;
+                                if (!av.IsChildAgent && vpParams != null && vpParams.Length > (int)AvatarAppearance.VPElement.SHAPE_MALE)
+                                {
+                                    ret.Add(new LSL_Float(vpParams[(int)AvatarAppearance.VPElement.SHAPE_MALE]));
+                                }
+                                else
+                                {
+                                    ret.Add(new LSL_Float(0));
+                                }
+                                break;
+
+                            case ScriptBaseClass.OBJECT_TOTAL_INVENTORY_COUNT:
+                                List<SceneObjectGroup> invAttachments = av.GetAttachments();
+                                int invcount = 0;
+                                try
+                                {
+                                    foreach (SceneObjectGroup Attachment in invAttachments)
+                                    {
+                                        SceneObjectPart[] parts = Attachment.Parts;
+                                        int nparts = parts.Count();
+                                        for (int i = 0; i < nparts; i++)
+                                            invcount += parts[i].Inventory.Count;
+                                    }
+                                }
+                                catch { };
+                                ret.Add(new LSL_Integer(invcount));
+                                break;
+
+                            case ScriptBaseClass.OBJECT_OMEGA:
+                                ret.Add(new LSL_Vector(av.AngularVelocity));
+                                break;
+
+                            case ScriptBaseClass.OBJECT_GROUP_TAG:
+                                ret.Add(new LSL_String(av.Grouptitle));
+                                break;
+
+                            case ScriptBaseClass.OBJECT_REZZER_KEY:
+                                ret.Add(new LSL_Key(id));
+                                break;
+
                             default:
                                 // Invalid or unhandled constant.
                                 ret.Add(new LSL_Integer(ScriptBaseClass.OBJECT_UNKNOWN_DETAIL));
@@ -12663,6 +12706,51 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                             case ScriptBaseClass.OBJECT_TEMP_ON_REZ:
                                 ret.Add(new LSL_Integer(obj.ParentGroup.IsTemporary ? 1 : 0));
                                 break;
+
+                            case ScriptBaseClass.OBJECT_LAST_OWNER_ID:
+                                ret.Add(new LSL_String(obj.LastOwnerID.ToString()));
+                                break;
+
+                            case ScriptBaseClass.OBJECT_CLICK_ACTION:
+                                ret.Add(new LSL_Integer(obj.ClickAction));
+                                break;
+
+                            case ScriptBaseClass.OBJECT_OMEGA:
+                                ret.Add(new LSL_Vector(obj.AngularVelocity));
+                                break;
+
+                            case ScriptBaseClass.OBJECT_PRIM_COUNT:
+                                ret.Add(new LSL_Integer(obj.ParentGroup.PrimCount));
+                                break;
+
+                            case ScriptBaseClass.OBJECT_TOTAL_INVENTORY_COUNT:
+                                int count = 0;
+                                foreach(SceneObjectPart part in obj.ParentGroup.Parts)
+                                {
+                                    count += part.Inventory.Count;
+                                }
+                                ret.Add(new LSL_Integer(count));
+                                break;
+
+                            case ScriptBaseClass.OBJECT_GROUP_TAG:
+                                ret.Add(new LSL_String());
+                                break;
+
+                            case ScriptBaseClass.OBJECT_SIT_COUNT:
+                                ret.Add(new LSL_Integer(obj.ParentGroup.GetSittingAvatarsCount()));
+                                break;
+
+                            case ScriptBaseClass.OBJECT_TEMP_ATTACHED:
+                                if (obj.ParentGroup.IsAttachment && obj.ParentGroup.FromItemID == UUID.Zero)
+                                {
+                                    ret.Add(new LSL_Integer(1));
+                                }
+                                else
+                                {
+                                    ret.Add(new LSL_Integer(0));
+                                }
+                                break;
+
                             default:
                                 // Invalid or unhandled constant.
                                 ret.Add(new LSL_Integer(ScriptBaseClass.OBJECT_UNKNOWN_DETAIL));
