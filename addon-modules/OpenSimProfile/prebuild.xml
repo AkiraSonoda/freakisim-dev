@@ -12,7 +12,7 @@
      </Configuration>
 
      <ReferencePath>../../../bin/</ReferencePath>
-     <Reference localCopy="false" name="System"/>
+     <Reference name="System"/>
      <Reference name="System.Xml"/>
      <Reference name="System.Drawing"/>
      <Reference name="System.Runtime.Remoting"/>
