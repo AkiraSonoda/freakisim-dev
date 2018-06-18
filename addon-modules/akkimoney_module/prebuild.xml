@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Project frameworkVersion="v4_5" name="OpenSim.Modules.Currency" path="addon-modules/akkimoney_module/Modules" type="Library">
+      <Configuration name="Debug">
+        <Options>
+          <OutputPath>../../../bin/</OutputPath>
+        </Options>
+      </Configuration>
+      <Configuration name="Release">
+        <Options>
+          <OutputPath>../../../bin/</OutputPath>
+        </Options>
+      </Configuration>
+
+      <ReferencePath>../../../bin/</ReferencePath>
+      <Reference name="System" localCopy="false"/>
+      <Reference name="System.Xml"/>
+      <Reference name="System.Drawing"/>
+      <Reference name="System.Runtime.Remoting"/>
+      <Reference name="Mono.Security.dll"/>
+      <Reference name="Nini.dll" path="../../../bin/"/>
+      <Reference name="log4net.dll" path="../../../bin/"/>
+      <Reference name="XMLRPC.dll" path="../../../bin/"/>
+      <Reference name="Mono.Addins.dll" path="../../../bin/"/>
+      <Reference name="OpenMetaverseTypes.dll" path="../../../bin/"/>
+      <Reference name="OpenMetaverse.dll" path="../../../bin/"/>
+      <Reference name="HttpServer.dll" path="../../../bin/"/>
+      <Reference name="OpenSim.Region.Framework" path="../../../bin/"/>
+      <Reference name="OpenSim.Framework" path="../../../bin/"/>
+      <Reference name="OpenSim.Framework.Console" path="../../../bin/"/>
+      <Reference name="OpenSim.Framework.Servers" path="../../../bin/"/>
+      <Reference name="OpenSim.Framework.Servers.HttpServer" path="../../../bin/"/>
+      <Reference name="OpenSim.Services.Interfaces" path="../../../bin/"/>
+      <Reference name="OpenSim.Server.Base" path="../../../bin/"/>
+      <Reference name="OpenSim.Data" path="../../../bin/"/>
+      <Reference name="RestSharp.dll" path="../../../bin/"/>
+
+      <Files>
+        <Match pattern="*.cs" recurse="true"/>
+      </Files>
+</Project>
