@@ -11,7 +11,7 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
-# This script does the checkout of a given svn version of the opensim simulator 
+# This script does the checkout of a given svn version of the opensim simulator
 # and builds it in the directory /opt/opensim. This script is intended to be used
 # only on multi-simulator environments where the build is done in /opt/opensim
 # prior to the distribution to the productive sims
@@ -26,6 +26,9 @@
 OSINS="/home/opensim"
 # Wo befindet sich das Backup verzeichnis?
 OSBACK="/home/opensim/backup"
+# Which is the user@server to get the sofware from
+SRCSERVER="opensim@surabaya.dereos.org"
+
 # Uebersteuerung
 test_version=$1
 
@@ -42,14 +45,14 @@ cd $OSINS
 # Hole die gerade aktuelle Versionsnummer von einem zentralen Ort
 # Falls dieser Server nicht verfügbar ist und die neuste Version nicht
 # geholt werden kann verlasse das script.
-wget -q http://suai.dyndns.org/dereos_freaki_version.txt
+scp $SRCSERVER:/home/opensim/src/dereos_freaki_version.txt /home/opensim/
 if [ ! -e "$OSINS/dereos_freaki_version.txt" ] ; then
   echo "Probably something went wrong with wget"
   exit
 fi
 
-# Fülle den Inhalt der Datei "version.txt" ( aktuelle Version ) und 
-# "metro_build_version.txt" (installierte Version) in Variablen ab um die 
+# Fülle den Inhalt der Datei "version.txt" ( aktuelle Version ) und
+# "metro_build_version.txt" (installierte Version) in Variablen ab um die
 # beiden Versionen vergleichen zu können.
 new_version=$(cat dereos_freaki_version.txt)
 old_version=$(cat dereos_freaki_build.txt)
@@ -75,14 +78,14 @@ echo $new_version
 
 cd $OSINS
 if [ "$test_version" != "" ] ; then
-  wget http://suai.dyndns.org/$test_version.tar.gz
+  scp $SRCSERVER:/home/opensim/src/$test_version.tar.gz /home/opensim
   tar xvf $test_version.tar.gz
 else
-  wget http://suai.dyndns.org/$new_version.tar.gz
+  scp $SRCSERVER:/home/opensim/src/$new_version.tar.gz
   tar xvf $new_version.tar.gz
 fi
 
-#build the sim 
+#build the sim
 if [ "$test_version" != "" ] ; then
 	cd $OSINS/$test_version
 	# Starte den prebuild process
@@ -106,7 +109,7 @@ cd $OSINS
 if [ "$test_version" == "" ] ; then
 	rm dereos_freaki_build.txt
 	cp dereos_freaki_version.txt dereos_freaki_build.txt
-fi 
+fi
 
 if [ "$test_version" != "" ] ; then
   echo $test_version > $OSINS/$test_version/version.txt

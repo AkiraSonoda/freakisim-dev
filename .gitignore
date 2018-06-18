@@ -9,7 +9,6 @@
 *.pdb
 *.pidb
 *.dll.build
-*.dll
 
 # Ignore .user and .suo files as these are user preference specific
 # http://stackoverflow.com/questions/72298/should-i-add-the-visual-studio-suo-and-user-files-to-source-control
@@ -30,8 +29,6 @@
 */*/*/*/*/*/bin
 */*/*/*/*/*/*/bin
 bin/Debug/*.dll
-bin/*.dll.mdb
-bin/*.db
 bin/*.db-journal
 bin/addin-db-*
 bin/*.dll
@@ -84,7 +81,6 @@ TAGS
 Makefile.local
 bin/.version
 compile.bat
-addon-modules
 OpenSim/Data/Tests/test-results/
 OpenSim/Framework/Serialization/Tests/test-results/
 OpenSim/Framework/Servers/Tests/test-results/
