@@ -7604,17 +7604,29 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
             }
             tempFloat = 66.66667f * (revolutions - 1.0f);
             shapeBlock.PathRevolutions = (byte)tempFloat;
-            // limits on radiusoffset depend on revolutions and hole size (how?) seems like the maximum range is 0 to 1
-            if (radiusoffset < 0f)
+            // limits on radiusoffset depend on revolutions and hole size
+            float taper_y_magnitude = (float)Math.Abs(taper_a.y);
+            if (radiusoffset * taper_a.y < 0)
             {
-                radiusoffset = 0f;
+                taper_y_magnitude = 0;
             }
-            if (radiusoffset > 1f)
+            float holesize_y_mag = (float)Math.Abs(holesize.y);
+            float max_radius_mag = 1f - holesize_y_mag * (1f - taper_y_magnitude) / (1f - holesize_y_mag);
+            if(Math.Abs(radiusoffset) > max_radius_mag)
             {
-                radiusoffset = 1f;
+                radiusoffset = Math.Sign(radiusoffset) * max_radius_mag;
             }
             tempFloat = 100.0f * radiusoffset;
             shapeBlock.PathRadiusOffset = (sbyte)tempFloat;
+            float min_skew_mag = (float)(1f - 1f / (revolutions * holesize.x + 1f));
+            if(Math.Abs(revolutions - 1.0) < 0.001)
+            {
+                min_skew_mag = 0f;
+            }
+            if(Math.Abs(skew) < min_skew_mag)
+            {
+                skew = min_skew_mag * Math.Sign(skew);
+            }
             if (skew < -0.95f)
             {
                 skew = -0.95f;
@@ -12328,7 +12340,12 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
         public LSL_Integer llGetObjectPrimCount(string object_id)
         {
             m_host.AddScriptLPS(1);
-            SceneObjectPart part = World.GetSceneObjectPart(new UUID(object_id));
+            UUID id;
+            if(!UUID.TryParse(object_id, out id))
+            {
+                return 0;
+            }
+            SceneObjectPart part = World.GetSceneObjectPart(id);
             if (part == null)
             {
                 return 0;
