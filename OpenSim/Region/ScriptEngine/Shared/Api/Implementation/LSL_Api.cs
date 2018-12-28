@@ -4295,16 +4295,19 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                     World.AssetService.Get(item.AssetID.ToString(), this,
                         delegate(string i, object sender, AssetBase a)
                         {
-                            AssetLandmark lm = new AssetLandmark(a);
+                            if (a != null)
+                            {
+                                AssetLandmark lm = new AssetLandmark(a);
 
-                            float rx = (uint)(lm.RegionHandle >> 32);
-                            float ry = (uint)lm.RegionHandle;
-                            region = lm.Position + new Vector3(rx, ry, 0) - region;
+                                float rx = (uint)(lm.RegionHandle >> 32);
+                                float ry = (uint)lm.RegionHandle;
+                                region = lm.Position + new Vector3(rx, ry, 0) - region;
 
-                            string reply = region.ToString();
-                            AsyncCommands.
-                                DataserverPlugin.DataserverReply(i.ToString(),
-                                                             reply);
+                                string reply = region.ToString();
+                                AsyncCommands.
+                                    DataserverPlugin.DataserverReply(tid.ToString(),
+                                                                 reply);
+                            }
                         });
 
                     ScriptSleep(1000);
@@ -12580,7 +12583,8 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                                 ret.Add(new LSL_String(obj.Description));
                                 break;
                             case ScriptBaseClass.OBJECT_POS:
-                                ret.Add(new LSL_Vector(obj.AbsolutePosition.X, obj.AbsolutePosition.Y, obj.AbsolutePosition.Z));
+                                Vector3 objWorldPos = obj.WorldPosition;
+                                ret.Add(new LSL_Vector(objWorldPos.X, objWorldPos.Y, objWorldPos.Z));
                                 break;
                             case ScriptBaseClass.OBJECT_ROT:
                                 {
@@ -12765,6 +12769,17 @@ namespace OpenSim.Region.ScriptEngine.Shared.Api
                                 else
                                 {
                                     ret.Add(new LSL_Integer(0));
+                                }
+                                break;
+
+                            case ScriptBaseClass.OBJECT_REZZER_KEY:
+                                if (obj.ParentGroup.FromPartID != UUID.Zero)
+                                {
+                                    ret.Add(new LSL_Key(obj.ParentGroup.FromPartID.ToString()));
+                                }
+                                else
+                                {
+                                    ret.Add(new LSL_Key(obj.OwnerID.ToString()));
                                 }
                                 break;
 
