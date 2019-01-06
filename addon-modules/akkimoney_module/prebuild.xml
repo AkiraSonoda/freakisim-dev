@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<Project frameworkVersion="v4_0" name="OpenSim.Modules.Currency" path="addon-modules/akkimoney_module/Modules" type="Library">
+<Project frameworkVersion="v4_5" name="OpenSim.Modules.Currency" path="addon-modules/akkimoney_module/Modules" type="Library">
       <Configuration name="Debug">
         <Options>
           <OutputPath>../../../bin/</OutputPath>
